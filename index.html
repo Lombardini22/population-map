@@ -1,0 +1,6306 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comuni Italia e Francia per Popolazione</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            padding: 16px;
+        }
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        .header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .header-left h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 4px;
+        }
+        .header-left p {
+            font-size: 0.875rem;
+            color: #666;
+        }
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .filter-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        .filter-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-btn.green {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+        .filter-btn.green.active, .filter-btn.green:hover {
+            background: #4CAF50;
+            color: white;
+        }
+        .filter-btn.orange {
+            background: #FFF3E0;
+            color: #E65100;
+        }
+        .filter-btn.orange.active, .filter-btn.orange:hover {
+            background: #FF9800;
+            color: white;
+        }
+        .filter-btn.pink {
+            background: #FCE4EC;
+            color: #C2185B;
+        }
+        .filter-btn.pink.active, .filter-btn.pink:hover {
+            background: #E91E63;
+            color: white;
+        }
+        .stats {
+            font-size: 0.8rem;
+            color: #888;
+            padding: 4px 12px;
+            background: #f8f9fa;
+            border-radius: 20px;
+        }
+        .stats-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            background: #fafafa;
+            border-bottom: 1px solid #eee;
+        }
+        .segment-stats {
+            display: flex;
+            gap: 20px;
+        }
+        .segment-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .segment-label {
+            font-size: 0.7rem;
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .segment-label.green {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+        .segment-label.orange {
+            background: #FFF3E0;
+            color: #E65100;
+        }
+        .segment-label.pink {
+            background: #FCE4EC;
+            color: #C2185B;
+        }
+        .segment-count {
+            font-size: 0.7rem;
+            color: #666;
+        }
+        #map { width: 100%; height: 750px; }
+        .legend-container {
+            padding: 16px 24px;
+            background: #fafafa;
+            border-top: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+        .logo-text {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #888;
+            margin-left: auto;
+            letter-spacing: 0.5px;
+        }
+        .legend-title {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .legend-items { display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-circle { border-radius: 50%; }
+        .legend-label { font-size: 0.8rem; color: #666; }
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 750px;
+            font-size: 1rem;
+            color: #888;
+        }
+        @media (max-width: 768px) {
+            .header { flex-direction: column; align-items: flex-start; }
+            #map { height: 500px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1>Comuni Italia e Francia</h1>
+                <p>Mappa interattiva dei comuni con più di 30.000 abitanti</p>
+            </div>
+        </div>
+        <div class="stats-bar">
+            <div class="filter-buttons">
+                <button class="filter-btn green active" data-min="30000">&gt; 30K</button>
+                <button class="filter-btn orange" data-min="100000">&gt; 100K</button>
+                <button class="filter-btn pink" data-min="500000">&gt; 500K</button>
+            </div>
+            <div class="segment-stats">
+                <div class="segment-row">
+                    <span class="segment-label green">30K-100K</span>
+                    <span class="segment-count" id="statsItaly30">🇮🇹 0</span>
+                    <span class="segment-count" id="statsFrance30">🇫🇷 0</span>
+                </div>
+                <div class="segment-row">
+                    <span class="segment-label orange">100K-500K</span>
+                    <span class="segment-count" id="statsItaly100">🇮🇹 0</span>
+                    <span class="segment-count" id="statsFrance100">🇫🇷 0</span>
+                </div>
+                <div class="segment-row">
+                    <span class="segment-label pink">&gt; 500K</span>
+                    <span class="segment-count" id="statsItaly500">🇮🇹 0</span>
+                    <span class="segment-count" id="statsFrance500">🇫🇷 0</span>
+                </div>
+            </div>
+        </div>
+        <div id="map"><div class="loading">Caricamento mappa...</div></div>
+        <div class="legend-container">
+            <span class="legend-title">Popolazione</span>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <div class="legend-circle" style="width: 10px; height: 10px; background: #4CAF50;"></div>
+                    <span class="legend-label">30K - 100K</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-circle" style="width: 18px; height: 18px; background: #FF9800;"></div>
+                    <span class="legend-label">100K - 500K</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-circle" style="width: 28px; height: 28px; background: #E91E63;"></div>
+                    <span class="legend-label">&gt; 500K</span>
+                </div>
+            </div>
+            <span class="logo-text">Lombardini22</span>
+        </div>
+    </div>
+    <script>
+const italyData = 
+[
+  {
+    "name": "Roma",
+    "value": [
+      12.46087930112385,
+      41.88562773260803,
+      5493968
+    ]
+  },
+  {
+    "name": "Milano",
+    "value": [
+      9.172932873477974,
+      45.468443524153095,
+      2732310
+    ]
+  },
+  {
+    "name": "Napoli",
+    "value": [
+      14.239289293468172,
+      40.856690798110264,
+      1816164
+    ]
+  },
+  {
+    "name": "Torino",
+    "value": [
+      7.67800573030826,
+      45.07177301279359,
+      1713490
+    ]
+  },
+  {
+    "name": "Palermo",
+    "value": [
+      13.331036022579067,
+      38.130232763603416,
+      1251912
+    ]
+  },
+  {
+    "name": "Genova",
+    "value": [
+      8.893067196169987,
+      44.44152341013347,
+      1127894
+    ]
+  },
+  {
+    "name": "Bologna",
+    "value": [
+      11.333416345079927,
+      44.49799517722863,
+      781468
+    ]
+  },
+  {
+    "name": "Firenze",
+    "value": [
+      11.244942815577948,
+      43.77996812124243,
+      724706
+    ]
+  },
+  {
+    "name": "Bari",
+    "value": [
+      16.845713752931708,
+      41.10302038106868,
+      630946
+    ]
+  },
+  {
+    "name": "Catania",
+    "value": [
+      15.035881859782558,
+      37.442203543357124,
+      595034
+    ]
+  },
+  {
+    "name": "Verona",
+    "value": [
+      11.002205642245018,
+      45.44869694226711,
+      510266
+    ]
+  },
+  {
+    "name": "Venezia",
+    "value": [
+      12.346292504606502,
+      45.46773693951322,
+      498932
+    ]
+  },
+  {
+    "name": "Messina",
+    "value": [
+      15.510625743810312,
+      38.19111317181952,
+      433836
+    ]
+  },
+  {
+    "name": "Padova",
+    "value": [
+      11.883178993299389,
+      45.40338038369192,
+      415388
+    ]
+  },
+  {
+    "name": "Brescia",
+    "value": [
+      10.225966093260384,
+      45.53256545707682,
+      399898
+    ]
+  },
+  {
+    "name": "Parma",
+    "value": [
+      10.327586639309263,
+      44.793674642555466,
+      397972
+    ]
+  },
+  {
+    "name": "Trieste",
+    "value": [
+      13.798600657687711,
+      45.664000789252555,
+      397336
+    ]
+  },
+  {
+    "name": "Prato",
+    "value": [
+      11.08478420096118,
+      43.87817001074888,
+      396652
+    ]
+  },
+  {
+    "name": "Taranto",
+    "value": [
+      17.300858640402748,
+      40.463397126862276,
+      371818
+    ]
+  },
+  {
+    "name": "Modena",
+    "value": [
+      10.915506592645478,
+      44.6440928074592,
+      369478
+    ]
+  },
+  {
+    "name": "Reggio nell'Emilia",
+    "value": [
+      10.634657225937298,
+      44.69744068200741,
+      345036
+    ]
+  },
+  {
+    "name": "Reggio di Calabria",
+    "value": [
+      15.718003608385892,
+      38.11273832449962,
+      337144
+    ]
+  },
+  {
+    "name": "Perugia",
+    "value": [
+      12.394963058096518,
+      43.13646089305086,
+      324934
+    ]
+  },
+  {
+    "name": "Ravenna",
+    "value": [
+      12.193126462260093,
+      44.41278866119368,
+      312888
+    ]
+  },
+  {
+    "name": "Livorno",
+    "value": [
+      10.349178169630397,
+      43.52196189578756,
+      305832
+    ]
+  },
+  {
+    "name": "Rimini",
+    "value": [
+      12.530552429245528,
+      44.038916304332865,
+      301260
+    ]
+  },
+  {
+    "name": "Cagliari",
+    "value": [
+      9.088334853654713,
+      39.22469344211807,
+      293254
+    ]
+  },
+  {
+    "name": "Foggia",
+    "value": [
+      15.583585612725983,
+      41.4562882766981,
+      290894
+    ]
+  },
+  {
+    "name": "Ferrara",
+    "value": [
+      11.649215367968077,
+      44.82285636126416,
+      258768
+    ]
+  },
+  {
+    "name": "Latina",
+    "value": [
+      12.877858592656581,
+      41.466407847250295,
+      255464
+    ]
+  },
+  {
+    "name": "Salerno",
+    "value": [
+      14.810238791225975,
+      40.67789372704757,
+      251916
+    ]
+  },
+  {
+    "name": "Giugliano in Campania",
+    "value": [
+      14.101677494983209,
+      40.92914477022026,
+      249266
+    ]
+  },
+  {
+    "name": "Monza",
+    "value": [
+      9.276088846819787,
+      45.58529403237764,
+      246262
+    ]
+  },
+  {
+    "name": "Bergamo",
+    "value": [
+      9.6639475377192,
+      45.69655182048556,
+      241160
+    ]
+  },
+  {
+    "name": "Sassari",
+    "value": [
+      8.36414297060067,
+      40.74468402149001,
+      240994
+    ]
+  },
+  {
+    "name": "Trento",
+    "value": [
+      11.11072056050579,
+      46.06149432461531,
+      237822
+    ]
+  },
+  {
+    "name": "Pescara",
+    "value": [
+      14.20326204457626,
+      42.45600107571348,
+      236838
+    ]
+  },
+  {
+    "name": "Forlì",
+    "value": [
+      12.049811189506457,
+      44.22743610119418,
+      235218
+    ]
+  },
+  {
+    "name": "Siracusa",
+    "value": [
+      15.213698763271545,
+      37.03930557417237,
+      231272
+    ]
+  },
+  {
+    "name": "Vicenza",
+    "value": [
+      11.553964818128732,
+      45.544946463307426,
+      220984
+    ]
+  },
+  {
+    "name": "Bolzano/Bozen",
+    "value": [
+      11.34867977758497,
+      46.485770685923804,
+      212926
+    ]
+  },
+  {
+    "name": "Terni",
+    "value": [
+      12.660561298391912,
+      42.57960102374551,
+      212822
+    ]
+  },
+  {
+    "name": "Piacenza",
+    "value": [
+      9.717808591497368,
+      45.04142507157492,
+      206928
+    ]
+  },
+  {
+    "name": "Novara",
+    "value": [
+      8.61567220735391,
+      45.439591298311534,
+      205146
+    ]
+  },
+  {
+    "name": "Ancona",
+    "value": [
+      13.491864540468407,
+      43.5727116863812,
+      198938
+    ]
+  },
+  {
+    "name": "Udine",
+    "value": [
+      13.245542670365763,
+      46.06406415614642,
+      196640
+    ]
+  },
+  {
+    "name": "Andria",
+    "value": [
+      16.23547433040672,
+      41.157300516677175,
+      193214
+    ]
+  },
+  {
+    "name": "Arezzo",
+    "value": [
+      11.90436309765076,
+      43.445068753741864,
+      193054
+    ]
+  },
+  {
+    "name": "Cesena",
+    "value": [
+      12.234944868070482,
+      44.13038533212728,
+      191774
+    ]
+  },
+  {
+    "name": "Pesaro",
+    "value": [
+      12.855486838109723,
+      43.87287306350577,
+      190720
+    ]
+  },
+  {
+    "name": "Lecce",
+    "value": [
+      18.177795159447037,
+      40.402197428101104,
+      188506
+    ]
+  },
+  {
+    "name": "La Spezia",
+    "value": [
+      9.821102281349093,
+      44.110018298996046,
+      185422
+    ]
+  },
+  {
+    "name": "Alessandria",
+    "value": [
+      8.64444981095407,
+      44.9090706256253,
+      185036
+    ]
+  },
+  {
+    "name": "Barletta",
+    "value": [
+      16.21618450969095,
+      41.28905817319321,
+      184020
+    ]
+  },
+  {
+    "name": "Pisa",
+    "value": [
+      10.35418806863054,
+      43.67228401738903,
+      178900
+    ]
+  },
+  {
+    "name": "Guidonia Montecelio",
+    "value": [
+      12.703134519150495,
+      41.98091102930141,
+      178330
+    ]
+  },
+  {
+    "name": "Pistoia",
+    "value": [
+      10.915665103243258,
+      43.9768546185415,
+      177886
+    ]
+  },
+  {
+    "name": "Lucca",
+    "value": [
+      10.473536109498406,
+      43.86466323774892,
+      177228
+    ]
+  },
+  {
+    "name": "Treviso",
+    "value": [
+      12.227727884575792,
+      45.663810107485006,
+      171540
+    ]
+  },
+  {
+    "name": "Busto Arsizio",
+    "value": [
+      8.842162655822456,
+      45.606282863629666,
+      167990
+    ]
+  },
+  {
+    "name": "Catanzaro",
+    "value": [
+      16.6025325629924,
+      38.889938667940115,
+      166494
+    ]
+  },
+  {
+    "name": "Como",
+    "value": [
+      9.081000882073752,
+      45.80424393783935,
+      166456
+    ]
+  },
+  {
+    "name": "Fiumicino",
+    "value": [
+      12.228440486514858,
+      41.88788276337104,
+      166150
+    ]
+  },
+  {
+    "name": "Brindisi",
+    "value": [
+      17.89865995101524,
+      40.6062314823488,
+      163328
+    ]
+  },
+  {
+    "name": "Grosseto",
+    "value": [
+      11.09014541466051,
+      42.76725620525652,
+      162824
+    ]
+  },
+  {
+    "name": "Marsala",
+    "value": [
+      12.540102476352661,
+      37.814571676392184,
+      159386
+    ]
+  },
+  {
+    "name": "Torre del Greco",
+    "value": [
+      14.40329974977669,
+      40.78726455447986,
+      158588
+    ]
+  },
+  {
+    "name": "Varese",
+    "value": [
+      8.812853994397024,
+      45.82404203336271,
+      158036
+    ]
+  },
+  {
+    "name": "Sesto San Giovanni",
+    "value": [
+      9.24240159060062,
+      45.53522615683474,
+      157686
+    ]
+  },
+  {
+    "name": "Pozzuoli",
+    "value": [
+      14.102234679863482,
+      40.85010552453325,
+      150384
+    ]
+  },
+  {
+    "name": "Cinisello Balsamo",
+    "value": [
+      9.218174697289204,
+      45.557315621945484,
+      149694
+    ]
+  },
+  {
+    "name": "Aprilia",
+    "value": [
+      12.656193517333694,
+      41.578589283430645,
+      149230
+    ]
+  },
+  {
+    "name": "Corigliano-Rossano",
+    "value": [
+      16.553862235610957,
+      39.606548622008944,
+      148004
+    ]
+  },
+  {
+    "name": "Ragusa",
+    "value": [
+      14.664174467096089,
+      36.906988343492515,
+      147556
+    ]
+  },
+  {
+    "name": "Asti",
+    "value": [
+      8.194348133362029,
+      44.913275255978235,
+      147006
+    ]
+  },
+  {
+    "name": "Casoria",
+    "value": [
+      14.304986813186769,
+      40.9005722137364,
+      146982
+    ]
+  },
+  {
+    "name": "Carpi",
+    "value": [
+      10.89252387209831,
+      44.80160649881647,
+      146648
+    ]
+  },
+  {
+    "name": "Caserta",
+    "value": [
+      14.35730518875126,
+      41.08756236669464,
+      145264
+    ]
+  },
+  {
+    "name": "Pavia",
+    "value": [
+      9.164629589592566,
+      45.197705584132805,
+      143112
+    ]
+  },
+  {
+    "name": "Cremona",
+    "value": [
+      10.02960696731086,
+      45.140910940302035,
+      142124
+    ]
+  },
+  {
+    "name": "L'Aquila",
+    "value": [
+      13.424911230496452,
+      42.393387965199,
+      140842
+    ]
+  },
+  {
+    "name": "Gela",
+    "value": [
+      14.293503732601952,
+      37.09416938752625,
+      140682
+    ]
+  },
+  {
+    "name": "Altamura",
+    "value": [
+      16.55024008015842,
+      40.85975423825512,
+      140188
+    ]
+  },
+  {
+    "name": "Imola",
+    "value": [
+      11.715972008179191,
+      44.387792920327165,
+      138700
+    ]
+  },
+  {
+    "name": "Quartu Sant'Elena",
+    "value": [
+      9.292783081128864,
+      39.22669230581648,
+      136216
+    ]
+  },
+  {
+    "name": "Lamezia Terme",
+    "value": [
+      16.27750948856339,
+      38.937931018073535,
+      134336
+    ]
+  },
+  {
+    "name": "Viterbo",
+    "value": [
+      12.063301442700723,
+      42.437708896488125,
+      132730
+    ]
+  },
+  {
+    "name": "Massa",
+    "value": [
+      10.161417790828441,
+      44.05492685935824,
+      131602
+    ]
+  },
+  {
+    "name": "Vittoria",
+    "value": [
+      14.496258724642063,
+      36.95683130206892,
+      131428
+    ]
+  },
+  {
+    "name": "Pomezia",
+    "value": [
+      12.505019268323343,
+      41.66209615947966,
+      129988
+    ]
+  },
+  {
+    "name": "Potenza",
+    "value": [
+      15.806742043316893,
+      40.65928767671992,
+      127678
+    ]
+  },
+  {
+    "name": "Cosenza",
+    "value": [
+      16.271300815785313,
+      39.27848777028313,
+      126482
+    ]
+  },
+  {
+    "name": "Vigevano",
+    "value": [
+      8.868128161049981,
+      45.30772771212944,
+      125690
+    ]
+  },
+  {
+    "name": "Castellammare di Stabia",
+    "value": [
+      14.481296064026296,
+      40.69618222403367,
+      124314
+    ]
+  },
+  {
+    "name": "Olbia",
+    "value": [
+      9.47977823792382,
+      40.923303132007774,
+      123316
+    ]
+  },
+  {
+    "name": "Afragola",
+    "value": [
+      14.32615938576823,
+      40.926032672611846,
+      122898
+    ]
+  },
+  {
+    "name": "Viareggio",
+    "value": [
+      10.267435143417785,
+      43.85452787929652,
+      121394
+    ]
+  },
+  {
+    "name": "Legnano",
+    "value": [
+      8.907527134162782,
+      45.59358327670853,
+      121292
+    ]
+  },
+  {
+    "name": "Fano",
+    "value": [
+      12.994483411888114,
+      43.81237134001562,
+      119814
+    ]
+  },
+  {
+    "name": "Anzio",
+    "value": [
+      12.607727656299696,
+      41.50202749223344,
+      119586
+    ]
+  },
+  {
+    "name": "Carrara",
+    "value": [
+      10.093850425861664,
+      44.082098286938546,
+      119398
+    ]
+  },
+  {
+    "name": "Matera",
+    "value": [
+      16.578672003555507,
+      40.66979612719768,
+      119172
+    ]
+  },
+  {
+    "name": "Faenza",
+    "value": [
+      11.909954154715818,
+      44.297217926469635,
+      117600
+    ]
+  },
+  {
+    "name": "Savona",
+    "value": [
+      8.423247160243694,
+      44.336125598122074,
+      117380
+    ]
+  },
+  {
+    "name": "Acerra",
+    "value": [
+      14.387460718303094,
+      40.965758731977004,
+      117070
+    ]
+  },
+  {
+    "name": "Crotone",
+    "value": [
+      17.08828336138308,
+      39.09291462653304,
+      116362
+    ]
+  },
+  {
+    "name": "Caltanissetta",
+    "value": [
+      14.008463763466905,
+      37.470213625035,
+      116090
+    ]
+  },
+  {
+    "name": "Marano di Napoli",
+    "value": [
+      14.16935973640424,
+      40.89137067226218,
+      115278
+    ]
+  },
+  {
+    "name": "Molfetta",
+    "value": [
+      16.570182994567148,
+      41.182779612142205,
+      114294
+    ]
+  },
+  {
+    "name": "Cerignola",
+    "value": [
+      15.877337830849328,
+      41.27852219360345,
+      113882
+    ]
+  },
+  {
+    "name": "Cuneo",
+    "value": [
+      7.552745597265695,
+      44.41634859462928,
+      111608
+    ]
+  },
+  {
+    "name": "Benevento",
+    "value": [
+      14.782893132553589,
+      41.14913002662122,
+      111290
+    ]
+  },
+  {
+    "name": "Moncalieri",
+    "value": [
+      7.70255913696356,
+      44.988361939176215,
+      110978
+    ]
+  },
+  {
+    "name": "Foligno",
+    "value": [
+      12.790955160601838,
+      42.976797691975435,
+      110620
+    ]
+  },
+  {
+    "name": "Agrigento",
+    "value": [
+      13.565512483747543,
+      37.322294851107856,
+      110454
+    ]
+  },
+  {
+    "name": "Tivoli",
+    "value": [
+      12.784554001008138,
+      41.957035853455814,
+      110214
+    ]
+  },
+  {
+    "name": "Trapani",
+    "value": [
+      12.667779760375081,
+      37.92405599722577,
+      109774
+    ]
+  },
+  {
+    "name": "Trani",
+    "value": [
+      16.389494968690947,
+      41.23911219466678,
+      109502
+    ]
+  },
+  {
+    "name": "Montesilvano",
+    "value": [
+      14.141828690700857,
+      42.49337919442796,
+      107112
+    ]
+  },
+  {
+    "name": "Modica",
+    "value": [
+      14.82279223728478,
+      36.85384627591431,
+      106826
+    ]
+  },
+  {
+    "name": "Bisceglie",
+    "value": [
+      16.485088629642487,
+      41.20518580392941,
+      106724
+    ]
+  },
+  {
+    "name": "Manfredonia",
+    "value": [
+      15.817750528661032,
+      41.53260631241835,
+      106576
+    ]
+  },
+  {
+    "name": "Sanremo",
+    "value": [
+      7.767451249865605,
+      43.83815248955409,
+      106066
+    ]
+  },
+  {
+    "name": "Siena",
+    "value": [
+      11.333767910795952,
+      43.31051298039348,
+      105982
+    ]
+  },
+  {
+    "name": "Bitonto",
+    "value": [
+      16.613504053716227,
+      41.06616455925048,
+      105830
+    ]
+  },
+  {
+    "name": "Bagheria",
+    "value": [
+      13.497089435605961,
+      38.0762856678272,
+      105808
+    ]
+  },
+  {
+    "name": "Gallarate",
+    "value": [
+      8.793176392035766,
+      45.662806097676025,
+      105772
+    ]
+  },
+  {
+    "name": "Velletri",
+    "value": [
+      12.768163225281192,
+      41.66292720498554,
+      105744
+    ]
+  },
+  {
+    "name": "Pordenone",
+    "value": [
+      12.65716678869318,
+      45.95381700137376,
+      104742
+    ]
+  },
+  {
+    "name": "Avellino",
+    "value": [
+      14.7881787249033,
+      40.91387982870497,
+      103820
+    ]
+  },
+  {
+    "name": "Civitavecchia",
+    "value": [
+      11.811221927497419,
+      42.116399033444694,
+      103278
+    ]
+  },
+  {
+    "name": "Teramo",
+    "value": [
+      13.710667526005652,
+      42.65827345702519,
+      103078
+    ]
+  },
+  {
+    "name": "Portici",
+    "value": [
+      14.341827462006751,
+      40.8188773693669,
+      102702
+    ]
+  },
+  {
+    "name": "Rho",
+    "value": [
+      9.049636095278629,
+      45.53088053497746,
+      101662
+    ]
+  },
+  {
+    "name": "Ardea",
+    "value": [
+      12.552992672580563,
+      41.61148831711871,
+      101562
+    ]
+  },
+  {
+    "name": "Acireale",
+    "value": [
+      15.160766805849246,
+      37.63430998702558,
+      101158
+    ]
+  },
+  {
+    "name": "Rovigo",
+    "value": [
+      11.794980143830449,
+      45.06963510674054,
+      99952
+    ]
+  },
+  {
+    "name": "Mazara del Vallo",
+    "value": [
+      12.646173055385947,
+      37.70179841115248,
+      99940
+    ]
+  },
+  {
+    "name": "Cava de' Tirreni",
+    "value": [
+      14.70467568307689,
+      40.710010235538306,
+      99508
+    ]
+  },
+  {
+    "name": "Mantova",
+    "value": [
+      10.807288702696836,
+      45.14920436062382,
+      99346
+    ]
+  },
+  {
+    "name": "Battipaglia",
+    "value": [
+      14.955181794189862,
+      40.594351317934674,
+      98790
+    ]
+  },
+  {
+    "name": "Empoli",
+    "value": [
+      10.944817880010236,
+      43.69852684744649,
+      98696
+    ]
+  },
+  {
+    "name": "Ercolano",
+    "value": [
+      14.38031305103574,
+      40.8195286524117,
+      98688
+    ]
+  },
+  {
+    "name": "Scandicci",
+    "value": [
+      11.150016736710576,
+      43.73242434624287,
+      98656
+    ]
+  },
+  {
+    "name": "Aversa",
+    "value": [
+      14.207043987524255,
+      40.97123241148892,
+      98590
+    ]
+  },
+  {
+    "name": "Sesto Fiorentino",
+    "value": [
+      11.22168311302055,
+      43.84005610903883,
+      98460
+    ]
+  },
+  {
+    "name": "San Severo",
+    "value": [
+      15.423829158880196,
+      41.65618268513457,
+      98110
+    ]
+  },
+  {
+    "name": "Misterbianco",
+    "value": [
+      15.012850303146184,
+      37.50406896439944,
+      97224
+    ]
+  },
+  {
+    "name": "Chieti",
+    "value": [
+      14.162609370804496,
+      42.358636062424495,
+      96868
+    ]
+  },
+  {
+    "name": "Nettuno",
+    "value": [
+      12.692391776974883,
+      41.47741398358646,
+      96346
+    ]
+  },
+  {
+    "name": "Collegno",
+    "value": [
+      7.59022078346604,
+      45.09131746920222,
+      95558
+    ]
+  },
+  {
+    "name": "Monopoli",
+    "value": [
+      17.27760092451897,
+      40.89785582281673,
+      95508
+    ]
+  },
+  {
+    "name": "Scafati",
+    "value": [
+      14.536933247997753,
+      40.762246621042564,
+      95412
+    ]
+  },
+  {
+    "name": "Campi Bisenzio",
+    "value": [
+      11.128334163149932,
+      43.822687776817304,
+      95238
+    ]
+  },
+  {
+    "name": "Paderno Dugnano",
+    "value": [
+      9.166598728374352,
+      45.572000394208196,
+      95068
+    ]
+  },
+  {
+    "name": "Campobasso",
+    "value": [
+      14.66257859478669,
+      41.56767933242267,
+      95038
+    ]
+  },
+  {
+    "name": "Lecco",
+    "value": [
+      9.42279413393378,
+      45.85760920711737,
+      94536
+    ]
+  },
+  {
+    "name": "Chioggia",
+    "value": [
+      12.246246664404769,
+      45.218119477173985,
+      94420
+    ]
+  },
+  {
+    "name": "Cologno Monzese",
+    "value": [
+      9.280120479184774,
+      45.53328390114844,
+      94306
+    ]
+  },
+  {
+    "name": "San Benedetto del Tronto",
+    "value": [
+      13.877764362833364,
+      42.92905302629267,
+      94038
+    ]
+  },
+  {
+    "name": "Corato",
+    "value": [
+      16.36790386204757,
+      41.09652526760895,
+      93764
+    ]
+  },
+  {
+    "name": "Lissone",
+    "value": [
+      9.241872227201332,
+      45.61709169602605,
+      93686
+    ]
+  },
+  {
+    "name": "Martina Franca",
+    "value": [
+      17.303684008626927,
+      40.68647482351331,
+      93402
+    ]
+  },
+  {
+    "name": "Capannori",
+    "value": [
+      10.577190804934329,
+      43.83512366349654,
+      93230
+    ]
+  },
+  {
+    "name": "Casalnuovo di Napoli",
+    "value": [
+      14.351883091973553,
+      40.90747469633627,
+      93228
+    ]
+  },
+  {
+    "name": "Marino",
+    "value": [
+      12.623355974765436,
+      41.76135411425442,
+      93142
+    ]
+  },
+  {
+    "name": "Rivoli",
+    "value": [
+      7.523567858932808,
+      45.0667455357207,
+      93134
+    ]
+  },
+  {
+    "name": "Vercelli",
+    "value": [
+      8.411388481279083,
+      45.31978542654805,
+      91956
+    ]
+  },
+  {
+    "name": "Nichelino",
+    "value": [
+      7.623940854709047,
+      44.99011813368529,
+      91604
+    ]
+  },
+  {
+    "name": "Settimo Torinese",
+    "value": [
+      7.772871886355903,
+      45.14575479359542,
+      91246
+    ]
+  },
+  {
+    "name": "Lodi",
+    "value": [
+      9.503573057981523,
+      45.31472804349109,
+      90698
+    ]
+  },
+  {
+    "name": "Ascoli Piceno",
+    "value": [
+      13.56877315645892,
+      42.851301352748,
+      90620
+    ]
+  },
+  {
+    "name": "Rieti",
+    "value": [
+      12.850482304357897,
+      42.40561008499186,
+      90338
+    ]
+  },
+  {
+    "name": "Seregno",
+    "value": [
+      9.204862501152686,
+      45.649732330773205,
+      89900
+    ]
+  },
+  {
+    "name": "Cascina",
+    "value": [
+      10.498636620510226,
+      43.66422835938729,
+      89622
+    ]
+  },
+  {
+    "name": "Terracina",
+    "value": [
+      13.190976129445742,
+      41.31599226153186,
+      89584
+    ]
+  },
+  {
+    "name": "Paternò",
+    "value": [
+      14.85609403047603,
+      37.53271347792602,
+      89354
+    ]
+  },
+  {
+    "name": "Alcamo",
+    "value": [
+      12.974207461270293,
+      37.963827412636775,
+      89192
+    ]
+  },
+  {
+    "name": "Senigallia",
+    "value": [
+      13.201061283129967,
+      43.681664365651386,
+      87630
+    ]
+  },
+  {
+    "name": "Nocera Inferiore",
+    "value": [
+      14.638966245588295,
+      40.75435089780639,
+      86848
+    ]
+  },
+  {
+    "name": "Biella",
+    "value": [
+      8.020248920002059,
+      45.59235175094674,
+      86418
+    ]
+  },
+  {
+    "name": "Frosinone",
+    "value": [
+      13.331360404046197,
+      41.634558464180095,
+      86198
+    ]
+  },
+  {
+    "name": "Imperia",
+    "value": [
+      8.003768753023412,
+      43.89920557151864,
+      84988
+    ]
+  },
+  {
+    "name": "Bassano del Grappa",
+    "value": [
+      11.707331941491654,
+      45.77389963081081,
+      84598
+    ]
+  },
+  {
+    "name": "Gravina in Puglia",
+    "value": [
+      16.363904322014033,
+      40.84073886965531,
+      84188
+    ]
+  },
+  {
+    "name": "Alghero",
+    "value": [
+      8.298997881830225,
+      40.59999141639924,
+      83912
+    ]
+  },
+  {
+    "name": "San Donà di Piave",
+    "value": [
+      12.59699066576193,
+      45.627599144106846,
+      83882
+    ]
+  },
+  {
+    "name": "Civitanova Marche",
+    "value": [
+      13.685072484378026,
+      43.31338454878009,
+      83830
+    ]
+  },
+  {
+    "name": "San Giorgio a Cremano",
+    "value": [
+      14.339506741550776,
+      40.83411828439644,
+      83496
+    ]
+  },
+  {
+    "name": "Desio",
+    "value": [
+      9.203704964536294,
+      45.617394829754126,
+      83298
+    ]
+  },
+  {
+    "name": "Rozzano",
+    "value": [
+      9.159970692337469,
+      45.38385203693722,
+      83156
+    ]
+  },
+  {
+    "name": "Merano/Meran",
+    "value": [
+      11.182804213839576,
+      46.65620683867265,
+      83078
+    ]
+  },
+  {
+    "name": "Quarto",
+    "value": [
+      14.12870259424312,
+      40.88397553878213,
+      82900
+    ]
+  },
+  {
+    "name": "Sassuolo",
+    "value": [
+      10.77826987693673,
+      44.533428778518534,
+      82280
+    ]
+  },
+  {
+    "name": "Monterotondo",
+    "value": [
+      12.622480925542556,
+      42.06769753979336,
+      82206
+    ]
+  },
+  {
+    "name": "Avezzano",
+    "value": [
+      13.446193775086048,
+      42.037202326743,
+      81774
+    ]
+  },
+  {
+    "name": "Vasto",
+    "value": [
+      14.694584044094512,
+      42.120956856678056,
+      81652
+    ]
+  },
+  {
+    "name": "Ladispoli",
+    "value": [
+      12.098568759514732,
+      41.95378903450897,
+      81638
+    ]
+  },
+  {
+    "name": "Carini",
+    "value": [
+      13.163508765492296,
+      38.129606123043374,
+      81282
+    ]
+  },
+  {
+    "name": "Macerata",
+    "value": [
+      13.451850751473252,
+      43.30357685835971,
+      81246
+    ]
+  },
+  {
+    "name": "Rovereto",
+    "value": [
+      11.045777674408624,
+      45.86520286267696,
+      80594
+    ]
+  },
+  {
+    "name": "Cantù",
+    "value": [
+      9.139731907094646,
+      45.73934344516008,
+      80552
+    ]
+  },
+  {
+    "name": "San Giuliano Milanese",
+    "value": [
+      9.280333100214522,
+      45.382418195380154,
+      80056
+    ]
+  },
+  {
+    "name": "Fondi",
+    "value": [
+      13.409650749903163,
+      41.336296231453,
+      79738
+    ]
+  },
+  {
+    "name": "Cesano Maderno",
+    "value": [
+      9.149045233097759,
+      45.62871770745392,
+      79610
+    ]
+  },
+  {
+    "name": "Barcellona Pozzo di Gotto",
+    "value": [
+      15.22750999285594,
+      38.13269661046534,
+      79556
+    ]
+  },
+  {
+    "name": "Pomigliano d'Arco",
+    "value": [
+      14.386989056716047,
+      40.9085091592641,
+      79502
+    ]
+  },
+  {
+    "name": "Torre Annunziata",
+    "value": [
+      14.458562611368924,
+      40.750919985961055,
+      79334
+    ]
+  },
+  {
+    "name": "Albano Laziale",
+    "value": [
+      12.632856243825804,
+      41.7103258965259,
+      79268
+    ]
+  },
+  {
+    "name": "Voghera",
+    "value": [
+      9.01352429985382,
+      45.008431600363394,
+      79134
+    ]
+  },
+  {
+    "name": "Jesi",
+    "value": [
+      13.261513640395503,
+      43.516591923786315,
+      78906
+    ]
+  },
+  {
+    "name": "Schio",
+    "value": [
+      11.349322869195182,
+      45.72616867185665,
+      77950
+    ]
+  },
+  {
+    "name": "Ciampino",
+    "value": [
+      12.614434388567512,
+      41.793646900744,
+      77698
+    ]
+  },
+  {
+    "name": "Fasano",
+    "value": [
+      17.40503471211655,
+      40.82501535170494,
+      77626
+    ]
+  },
+  {
+    "name": "Saronno",
+    "value": [
+      9.036653697910667,
+      45.62707390480079,
+      77456
+    ]
+  },
+  {
+    "name": "Monreale",
+    "value": [
+      13.177959818056742,
+      37.92507901447249,
+      77380
+    ]
+  },
+  {
+    "name": "Sciacca",
+    "value": [
+      13.102991520456309,
+      37.54345484066027,
+      77082
+    ]
+  },
+  {
+    "name": "Marcianise",
+    "value": [
+      14.294708782722871,
+      41.02161521533292,
+      76318
+    ]
+  },
+  {
+    "name": "Cerveteri",
+    "value": [
+      12.094869084116997,
+      42.00873412127703,
+      76180
+    ]
+  },
+  {
+    "name": "Città di Castello",
+    "value": [
+      12.248560767558175,
+      43.44459815102132,
+      75768
+    ]
+  },
+  {
+    "name": "Mira",
+    "value": [
+      12.185600927603211,
+      45.41297868811666,
+      75266
+    ]
+  },
+  {
+    "name": "Eboli",
+    "value": [
+      15.005488329940727,
+      40.56221620765351,
+      75156
+    ]
+  },
+  {
+    "name": "Pioltello",
+    "value": [
+      9.323705605286337,
+      45.49111203451203,
+      74540
+    ]
+  },
+  {
+    "name": "Segrate",
+    "value": [
+      9.285429380631117,
+      45.48423983235511,
+      74158
+    ]
+  },
+  {
+    "name": "Rende",
+    "value": [
+      16.21072314728535,
+      39.347630200642136,
+      73638
+    ]
+  },
+  {
+    "name": "Formia",
+    "value": [
+      13.628110781537172,
+      41.284689580132685,
+      73562
+    ]
+  },
+  {
+    "name": "Maddaloni",
+    "value": [
+      14.391203129644182,
+      41.02584659605044,
+      73332
+    ]
+  },
+  {
+    "name": "Grugliasco",
+    "value": [
+      7.593267603436457,
+      45.05545774781292,
+      72998
+    ]
+  },
+  {
+    "name": "Bollate",
+    "value": [
+      9.114636813123242,
+      45.55042798782959,
+      72712
+    ]
+  },
+  {
+    "name": "Cisterna di Latina",
+    "value": [
+      12.837454145712817,
+      41.57336440209569,
+      72506
+    ]
+  },
+  {
+    "name": "Melito di Napoli",
+    "value": [
+      14.23094121374251,
+      40.919310549898356,
+      72286
+    ]
+  },
+  {
+    "name": "Modugno",
+    "value": [
+      16.784955435150707,
+      41.08369390430435,
+      71944
+    ]
+  },
+  {
+    "name": "Spoleto",
+    "value": [
+      12.708056815130737,
+      42.73750438709599,
+      71944
+    ]
+  },
+  {
+    "name": "Caivano",
+    "value": [
+      14.319149957501423,
+      40.97335497543622,
+      71844
+    ]
+  },
+  {
+    "name": "Chieri",
+    "value": [
+      7.827811387527514,
+      45.0035853382393,
+      71730
+    ]
+  },
+  {
+    "name": "Fermo",
+    "value": [
+      13.716905968409701,
+      43.16075079552114,
+      71670
+    ]
+  },
+  {
+    "name": "Cento",
+    "value": [
+      11.307896464025506,
+      44.77571048450606,
+      71034
+    ]
+  },
+  {
+    "name": "Limbiate",
+    "value": [
+      9.120912345512151,
+      45.60103715152408,
+      71006
+    ]
+  },
+  {
+    "name": "Belluno",
+    "value": [
+      12.21913459841385,
+      46.1406237176815,
+      70994
+    ]
+  },
+  {
+    "name": "Caltagirone",
+    "value": [
+      14.512033390366273,
+      37.19090477771738,
+      70878
+    ]
+  },
+  {
+    "name": "Pinerolo",
+    "value": [
+      7.348001766986732,
+      44.89126625795633,
+      70870
+    ]
+  },
+  {
+    "name": "Brugherio",
+    "value": [
+      9.300838370093075,
+      45.55258070829467,
+      70774
+    ]
+  },
+  {
+    "name": "Casalecchio di Reno",
+    "value": [
+      11.265351452866634,
+      44.47096875220382,
+      70720
+    ]
+  },
+  {
+    "name": "Mugnano di Napoli",
+    "value": [
+      14.21071128506548,
+      40.90903731642795,
+      70462
+    ]
+  },
+  {
+    "name": "Pagani",
+    "value": [
+      14.609372966970227,
+      40.75287328923421,
+      70172
+    ]
+  },
+  {
+    "name": "Cassino",
+    "value": [
+      13.83556624052152,
+      41.47888774848508,
+      69850
+    ]
+  },
+  {
+    "name": "Osimo",
+    "value": [
+      13.462039200057413,
+      43.48433833536764,
+      69640
+    ]
+  },
+  {
+    "name": "Cernusco sul Naviglio",
+    "value": [
+      9.332194788878567,
+      45.52604711253139,
+      69546
+    ]
+  },
+  {
+    "name": "Corsico",
+    "value": [
+      9.100760057338277,
+      45.43306393616047,
+      69358
+    ]
+  },
+  {
+    "name": "Conegliano",
+    "value": [
+      12.29342136763965,
+      45.8993562478911,
+      69312
+    ]
+  },
+  {
+    "name": "Augusta",
+    "value": [
+      15.148806179364495,
+      37.262449163209816,
+      69246
+    ]
+  },
+  {
+    "name": "Francavilla Fontana",
+    "value": [
+      17.563442898289907,
+      40.52983802056343,
+      69024
+    ]
+  },
+  {
+    "name": "Formigine",
+    "value": [
+      10.845915520661922,
+      44.58005200905722,
+      68960
+    ]
+  },
+  {
+    "name": "Riccione",
+    "value": [
+      12.645809368951983,
+      43.996827133350195,
+      68768
+    ]
+  },
+  {
+    "name": "Canicattì",
+    "value": [
+      13.837907252344294,
+      37.37169199418889,
+      68532
+    ]
+  },
+  {
+    "name": "Angri",
+    "value": [
+      14.56801323908982,
+      40.74121849127283,
+      68272
+    ]
+  },
+  {
+    "name": "Nola",
+    "value": [
+      14.51108692906601,
+      40.924372978415505,
+      68178
+    ]
+  },
+  {
+    "name": "Licata",
+    "value": [
+      13.919021684264873,
+      37.154418710273326,
+      68174
+    ]
+  },
+  {
+    "name": "Crema",
+    "value": [
+      9.682935633543535,
+      45.36602072231743,
+      68058
+    ]
+  },
+  {
+    "name": "Lanciano",
+    "value": [
+      14.400228307248364,
+      42.2079358790394,
+      67800
+    ]
+  },
+  {
+    "name": "Gorizia",
+    "value": [
+      13.598651233046045,
+      45.944059934816465,
+      67332
+    ]
+  },
+  {
+    "name": "Adrano",
+    "value": [
+      14.857165870118228,
+      37.69465104951947,
+      67220
+    ]
+  },
+  {
+    "name": "Castelfranco Emilia",
+    "value": [
+      11.07278563979794,
+      44.59819490089915,
+      66938
+    ]
+  },
+  {
+    "name": "Somma Vesuviana",
+    "value": [
+      14.444134307977086,
+      40.87362616993944,
+      66682
+    ]
+  },
+  {
+    "name": "Castelfranco Veneto",
+    "value": [
+      11.93473404864761,
+      45.667048812414684,
+      66388
+    ]
+  },
+  {
+    "name": "Aosta",
+    "value": [
+      7.301733687948388,
+      45.74940041414681,
+      66272
+    ]
+  },
+  {
+    "name": "Nuoro",
+    "value": [
+      9.299555331455819,
+      40.3394452856457,
+      66212
+    ]
+  },
+  {
+    "name": "Villafranca di Verona",
+    "value": [
+      10.85007069834768,
+      45.35998982923058,
+      65854
+    ]
+  },
+  {
+    "name": "San Lazzaro di Savena",
+    "value": [
+      11.426158461620759,
+      44.45071259146113,
+      65704
+    ]
+  },
+  {
+    "name": "Abbiategrasso",
+    "value": [
+      8.895453988969264,
+      45.38181285859614,
+      65418
+    ]
+  },
+  {
+    "name": "Fonte Nuova",
+    "value": [
+      12.634768673568718,
+      42.00220962410845,
+      65394
+    ]
+  },
+  {
+    "name": "Sant'Antimo",
+    "value": [
+      14.2327804738522,
+      40.94309416073018,
+      64856
+    ]
+  },
+  {
+    "name": "Casale Monferrato",
+    "value": [
+      8.461644191224446,
+      45.1264020058417,
+      64806
+    ]
+  },
+  {
+    "name": "Piombino",
+    "value": [
+      10.604093955603684,
+      42.975414763651465,
+      64728
+    ]
+  },
+  {
+    "name": "San Donato Milanese",
+    "value": [
+      9.259037803718137,
+      45.412462836079236,
+      64404
+    ]
+  },
+  {
+    "name": "Lugo",
+    "value": [
+      11.906598583897809,
+      44.477337148798334,
+      64304
+    ]
+  },
+  {
+    "name": "Valsamoggia",
+    "value": [
+      11.091292688708833,
+      44.444237410177244,
+      64234
+    ]
+  },
+  {
+    "name": "Santa Maria Capua Vetere",
+    "value": [
+      14.246921257998526,
+      41.06993674686651,
+      64162
+    ]
+  },
+  {
+    "name": "Mascalucia",
+    "value": [
+      15.039987830329476,
+      37.58701247914882,
+      64080
+    ]
+  },
+  {
+    "name": "Venaria Reale",
+    "value": [
+      7.618921619845438,
+      45.14072541534981,
+      64026
+    ]
+  },
+  {
+    "name": "Termoli",
+    "value": [
+      14.962555254494317,
+      41.98165686820925,
+      63716
+    ]
+  },
+  {
+    "name": "Massafra",
+    "value": [
+      17.116573396348503,
+      40.59780904769889,
+      63624
+    ]
+  },
+  {
+    "name": "Arzano",
+    "value": [
+      14.267089036568487,
+      40.91348620021516,
+      63564
+    ]
+  },
+  {
+    "name": "Camaiore",
+    "value": [
+      10.32090711709731,
+      43.928267185823096,
+      63510
+    ]
+  },
+  {
+    "name": "Treviglio",
+    "value": [
+      9.594467050823626,
+      45.53058092020205,
+      62756
+    ]
+  },
+  {
+    "name": "Villaricca",
+    "value": [
+      14.156622568103439,
+      40.91400771266371,
+      62710
+    ]
+  },
+  {
+    "name": "Favara",
+    "value": [
+      13.672379675355335,
+      37.317829656811234,
+      62618
+    ]
+  },
+  {
+    "name": "Montebelluna",
+    "value": [
+      12.042602154193425,
+      45.77122086917542,
+      62492
+    ]
+  },
+  {
+    "name": "Alba",
+    "value": [
+      8.030793906176358,
+      44.687865390479594,
+      61880
+    ]
+  },
+  {
+    "name": "Vibo Valentia",
+    "value": [
+      16.093603109921013,
+      38.68249401161141,
+      61826
+    ]
+  },
+  {
+    "name": "San Giuliano Terme",
+    "value": [
+      10.410384336978819,
+      43.75694910798471,
+      61708
+    ]
+  },
+  {
+    "name": "Sarno",
+    "value": [
+      14.62324626475722,
+      40.81814198822271,
+      61502
+    ]
+  },
+  {
+    "name": "Castel Volturno",
+    "value": [
+      13.971751420714387,
+      41.02621443999708,
+      61372
+    ]
+  },
+  {
+    "name": "Nardò",
+    "value": [
+      17.95716289602903,
+      40.23239945321101,
+      61334
+    ]
+  },
+  {
+    "name": "Avola",
+    "value": [
+      15.119163060855247,
+      36.927147713850886,
+      61308
+    ]
+  },
+  {
+    "name": "Partinico",
+    "value": [
+      13.064868457864204,
+      38.0249499105245,
+      61272
+    ]
+  },
+  {
+    "name": "Lucera",
+    "value": [
+      15.351846106056247,
+      41.49748870647754,
+      61062
+    ]
+  },
+  {
+    "name": "Monfalcone",
+    "value": [
+      13.543456063180379,
+      45.799137012340836,
+      61038
+    ]
+  },
+  {
+    "name": "San Giuseppe Vesuviano",
+    "value": [
+      14.502204980499144,
+      40.826563436215814,
+      60828
+    ]
+  },
+  {
+    "name": "Gubbio",
+    "value": [
+      12.546579738660597,
+      43.33105981508546,
+      60594
+    ]
+  },
+  {
+    "name": "Comiso",
+    "value": [
+      14.594258964866162,
+      36.96388722701032,
+      60470
+    ]
+  },
+  {
+    "name": "Grottaglie",
+    "value": [
+      17.41381553912706,
+      40.537321178535706,
+      60344
+    ]
+  },
+  {
+    "name": "Rosignano Marittimo",
+    "value": [
+      10.452942172032017,
+      43.421009210228114,
+      60164
+    ]
+  },
+  {
+    "name": "Oristano",
+    "value": [
+      8.614554719004788,
+      39.90934127731417,
+      60014
+    ]
+  },
+  {
+    "name": "Verbania",
+    "value": [
+      8.540186589855166,
+      45.935123401057396,
+      59864
+    ]
+  },
+  {
+    "name": "Pontedera",
+    "value": [
+      10.64680040979455,
+      43.64668868134934,
+      59792
+    ]
+  },
+  {
+    "name": "Ostuni",
+    "value": [
+      17.54876072706892,
+      40.73005986025226,
+      59744
+    ]
+  },
+  {
+    "name": "Milazzo",
+    "value": [
+      15.243105837242597,
+      38.204611432049056,
+      59660
+    ]
+  },
+  {
+    "name": "Bra",
+    "value": [
+      7.825275624712756,
+      44.70692086313494,
+      59444
+    ]
+  },
+  {
+    "name": "Manduria",
+    "value": [
+      17.640299600047666,
+      40.37792785034208,
+      59246
+    ]
+  },
+  {
+    "name": "Rapallo",
+    "value": [
+      9.216151387998888,
+      44.36800332563681,
+      59026
+    ]
+  },
+  {
+    "name": "Castelvetrano",
+    "value": [
+      12.816469816777667,
+      37.65506318302417,
+      58684
+    ]
+  },
+  {
+    "name": "Marigliano",
+    "value": [
+      14.45289066988208,
+      40.93639683350821,
+      58634
+    ]
+  },
+  {
+    "name": "Desenzano del Garda",
+    "value": [
+      10.563924866006978,
+      45.45376877369546,
+      58550
+    ]
+  },
+  {
+    "name": "Misilmeri",
+    "value": [
+      13.437973752319474,
+      38.01762870931813,
+      58064
+    ]
+  },
+  {
+    "name": "Cervia",
+    "value": [
+      12.31498938674655,
+      44.25119337103271,
+      57916
+    ]
+  },
+  {
+    "name": "Fabriano",
+    "value": [
+      12.906606408397064,
+      43.33172396713147,
+      57296
+    ]
+  },
+  {
+    "name": "Frattamaggiore",
+    "value": [
+      14.274531190524433,
+      40.93679470889004,
+      56946
+    ]
+  },
+  {
+    "name": "Mondragone",
+    "value": [
+      13.914837068599702,
+      41.11010096243133,
+      56924
+    ]
+  },
+  {
+    "name": "Selargius",
+    "value": [
+      9.140373587542069,
+      39.279846489969,
+      56646
+    ]
+  },
+  {
+    "name": "Parabiago",
+    "value": [
+      8.943328414642133,
+      45.54923239225328,
+      56466
+    ]
+  },
+  {
+    "name": "Belpasso",
+    "value": [
+      14.937402821298846,
+      37.52875935354946,
+      56394
+    ]
+  },
+  {
+    "name": "Poggibonsi",
+    "value": [
+      11.166672197648907,
+      43.45761263382283,
+      56248
+    ]
+  },
+  {
+    "name": "Carmagnola",
+    "value": [
+      7.735665064800275,
+      44.858171790067175,
+      56160
+    ]
+  },
+  {
+    "name": "San Giovanni in Persiceto",
+    "value": [
+      11.203252166379698,
+      44.660216791872536,
+      56114
+    ]
+  },
+  {
+    "name": "Cecina",
+    "value": [
+      10.519339005267911,
+      43.314683497471854,
+      56108
+    ]
+  },
+  {
+    "name": "Mogliano Veneto",
+    "value": [
+      12.252582474436357,
+      45.567822837376376,
+      55958
+    ]
+  },
+  {
+    "name": "San Miniato",
+    "value": [
+      10.8413557633914,
+      43.6678325040459,
+      55652
+    ]
+  },
+  {
+    "name": "Spinea",
+    "value": [
+      12.155121504162597,
+      45.49084434160843,
+      55564
+    ]
+  },
+  {
+    "name": "Gragnano",
+    "value": [
+      14.53561603838958,
+      40.6861863440714,
+      55322
+    ]
+  },
+  {
+    "name": "Alatri",
+    "value": [
+      13.360404931759746,
+      41.728036563542304,
+      55062
+    ]
+  },
+  {
+    "name": "Aci Catena",
+    "value": [
+      15.1426208893915,
+      37.58545946762308,
+      55010
+    ]
+  },
+  {
+    "name": "Canosa di Puglia",
+    "value": [
+      16.017571421513576,
+      41.190077399024695,
+      54932
+    ]
+  },
+  {
+    "name": "Assisi",
+    "value": [
+      12.625265949871375,
+      43.08618153927143,
+      54906
+    ]
+  },
+  {
+    "name": "Chiavari",
+    "value": [
+      9.317391962261079,
+      44.32909270900298,
+      54884
+    ]
+  },
+  {
+    "name": "Orta di Atella",
+    "value": [
+      14.278646102361169,
+      40.98240020035156,
+      54840
+    ]
+  },
+  {
+    "name": "Fidenza",
+    "value": [
+      10.055911621717064,
+      44.862109360297836,
+      54810
+    ]
+  },
+  {
+    "name": "Novi Ligure",
+    "value": [
+      8.79519696306991,
+      44.765162555704286,
+      54778
+    ]
+  },
+  {
+    "name": "Albignasego",
+    "value": [
+      11.867836390797029,
+      45.34673003219101,
+      54650
+    ]
+  },
+  {
+    "name": "Vittorio Veneto",
+    "value": [
+      12.296703264933996,
+      46.00393610827118,
+      54506
+    ]
+  },
+  {
+    "name": "Mirano",
+    "value": [
+      12.087765548018263,
+      45.48563254178766,
+      54046
+    ]
+  },
+  {
+    "name": "Jesolo",
+    "value": [
+      12.634003078603042,
+      45.534804492362554,
+      54008
+    ]
+  },
+  {
+    "name": "Quarrata",
+    "value": [
+      10.971674535171951,
+      43.85172931865798,
+      53868
+    ]
+  },
+  {
+    "name": "Garbagnate Milanese",
+    "value": [
+      9.07716276638294,
+      45.574589168933926,
+      53798
+    ]
+  },
+  {
+    "name": "Scicli",
+    "value": [
+      14.697966903291121,
+      36.77649402194344,
+      53562
+    ]
+  },
+  {
+    "name": "Pontecagnano Faiano",
+    "value": [
+      14.886956721118297,
+      40.62659433709453,
+      53162
+    ]
+  },
+  {
+    "name": "Tortona",
+    "value": [
+      8.841743326177221,
+      44.88721398545824,
+      53094
+    ]
+  },
+  {
+    "name": "Giarre",
+    "value": [
+      15.16795473834363,
+      37.71867750242848,
+      53072
+    ]
+  },
+  {
+    "name": "Bresso",
+    "value": [
+      9.195432020438949,
+      45.536418548195556,
+      53060
+    ]
+  },
+  {
+    "name": "Giussano",
+    "value": [
+      9.21112527643577,
+      45.693336835000565,
+      53000
+    ]
+  },
+  {
+    "name": "Buccinasco",
+    "value": [
+      9.109748161314819,
+      45.40736403732703,
+      52910
+    ]
+  },
+  {
+    "name": "Gioia del Colle",
+    "value": [
+      16.911998921268335,
+      40.777554049914464,
+      52886
+    ]
+  },
+  {
+    "name": "Montichiari",
+    "value": [
+      10.381896955559974,
+      45.411183283013074,
+      52744
+    ]
+  },
+  {
+    "name": "Lainate",
+    "value": [
+      9.025652065287481,
+      45.56615629902552,
+      52720
+    ]
+  },
+  {
+    "name": "San Giovanni Rotondo",
+    "value": [
+      15.75030090330935,
+      41.65605740858959,
+      52542
+    ]
+  },
+  {
+    "name": "Vignola",
+    "value": [
+      10.996159347286389,
+      44.48680515337138,
+      52382
+    ]
+  },
+  {
+    "name": "Sant'Anastasia",
+    "value": [
+      14.399092381334276,
+      40.872009275346144,
+      52274
+    ]
+  },
+  {
+    "name": "Vimercate",
+    "value": [
+      9.368366447703789,
+      45.61549230635168,
+      52268
+    ]
+  },
+  {
+    "name": "Chivasso",
+    "value": [
+      7.895952645351818,
+      45.205866793468765,
+      52148
+    ]
+  },
+  {
+    "name": "Cesenatico",
+    "value": [
+      12.380087695220928,
+      44.17584721364603,
+      52010
+    ]
+  },
+  {
+    "name": "Scandiano",
+    "value": [
+      10.689929999474924,
+      44.598809681336355,
+      51910
+    ]
+  },
+  {
+    "name": "Terlizzi",
+    "value": [
+      16.549031693093557,
+      41.113046494037626,
+      51856
+    ]
+  },
+  {
+    "name": "Roseto degli Abruzzi",
+    "value": [
+      13.979454655774243,
+      42.68110237304419,
+      51832
+    ]
+  },
+  {
+    "name": "Mesagne",
+    "value": [
+      17.80602764502818,
+      40.53830203927999,
+      51816
+    ]
+  },
+  {
+    "name": "Conversano",
+    "value": [
+      17.10359585957124,
+      40.9536898062283,
+      51806
+    ]
+  },
+  {
+    "name": "Falconara Marittima",
+    "value": [
+      13.374102082102095,
+      43.62118532850708,
+      51774
+    ]
+  },
+  {
+    "name": "Legnago",
+    "value": [
+      11.30132896354894,
+      45.16478328517778,
+      51704
+    ]
+  },
+  {
+    "name": "Noicattaro",
+    "value": [
+      16.986682529402227,
+      41.04414525223214,
+      51700
+    ]
+  },
+  {
+    "name": "Valdagno",
+    "value": [
+      11.284609479490287,
+      45.6469874897174,
+      51692
+    ]
+  },
+  {
+    "name": "Volla",
+    "value": [
+      14.34498899828729,
+      40.88297567280701,
+      51660
+    ]
+  },
+  {
+    "name": "Porto Sant'Elpidio",
+    "value": [
+      13.745021967421431,
+      43.25511661497894,
+      51602
+    ]
+  },
+  {
+    "name": "Arzignano",
+    "value": [
+      11.338051529618019,
+      45.52560436408349,
+      51558
+    ]
+  },
+  {
+    "name": "Erice",
+    "value": [
+      12.614197039591325,
+      38.01199307381368,
+      51512
+    ]
+  },
+  {
+    "name": "Triggiano",
+    "value": [
+      16.946470343381318,
+      41.071206693662965,
+      51508
+    ]
+  },
+  {
+    "name": "Boscoreale",
+    "value": [
+      14.506217700094382,
+      40.779281038601766,
+      51482
+    ]
+  },
+  {
+    "name": "Putignano",
+    "value": [
+      17.08818111377969,
+      40.8425221924191,
+      51412
+    ]
+  },
+  {
+    "name": "Santeramo in Colle",
+    "value": [
+      16.744995331938263,
+      40.78073138746641,
+      51300
+    ]
+  },
+  {
+    "name": "Carbonia",
+    "value": [
+      8.523851251050202,
+      39.2016435991824,
+      51176
+    ]
+  },
+  {
+    "name": "Seriate",
+    "value": [
+      9.732776926747526,
+      45.67210133872993,
+      51172
+    ]
+  },
+  {
+    "name": "Assemini",
+    "value": [
+      8.956775624956034,
+      39.21102825162603,
+      51154
+    ]
+  },
+  {
+    "name": "Mariano Comense",
+    "value": [
+      9.17467819261646,
+      45.69777085580834,
+      50924
+    ]
+  },
+  {
+    "name": "San Giovanni Lupatoto",
+    "value": [
+      11.037622057498423,
+      45.36896826765237,
+      50898
+    ]
+  },
+  {
+    "name": "Francavilla al Mare",
+    "value": [
+      14.27587110315604,
+      42.41179297518323,
+      50886
+    ]
+  },
+  {
+    "name": "Galatina",
+    "value": [
+      18.136598174107338,
+      40.192720314421074,
+      50608
+    ]
+  },
+  {
+    "name": "Gravina di Catania",
+    "value": [
+      15.062858024685477,
+      37.554822513009846,
+      50542
+    ]
+  },
+  {
+    "name": "Correggio",
+    "value": [
+      10.765572146288237,
+      44.76296520863852,
+      50432
+    ]
+  },
+  {
+    "name": "Enna",
+    "value": [
+      14.288726259244227,
+      37.51887892414317,
+      50158
+    ]
+  },
+  {
+    "name": "Bagno a Ripoli",
+    "value": [
+      11.340631118210542,
+      43.73320884345428,
+      49928
+    ]
+  },
+  {
+    "name": "Bacoli",
+    "value": [
+      14.0649674008023,
+      40.81585709138471,
+      49920
+    ]
+  },
+  {
+    "name": "Magenta",
+    "value": [
+      8.862432951523925,
+      45.45340142107638,
+      49470
+    ]
+  },
+  {
+    "name": "Termini Imerese",
+    "value": [
+      13.742735114544912,
+      37.95923209150238,
+      49432
+    ]
+  },
+  {
+    "name": "Sora",
+    "value": [
+      13.575962980108029,
+      41.73260457156452,
+      49424
+    ]
+  },
+  {
+    "name": "Mirandola",
+    "value": [
+      11.124507657997661,
+      44.907378365481705,
+      49384
+    ]
+  },
+  {
+    "name": "Niscemi",
+    "value": [
+      14.406578046116659,
+      37.14075421015568,
+      49338
+    ]
+  },
+  {
+    "name": "Qualiano",
+    "value": [
+      14.133724237362348,
+      40.92292266850762,
+      49304
+    ]
+  },
+  {
+    "name": "Iglesias",
+    "value": [
+      8.53370302356923,
+      39.321035073496745,
+      49268
+    ]
+  },
+  {
+    "name": "Noto",
+    "value": [
+      15.019946831095309,
+      36.91235145953753,
+      49250
+    ]
+  },
+  {
+    "name": "Portogruaro",
+    "value": [
+      12.851775761839436,
+      45.75685572733342,
+      48750
+    ]
+  },
+  {
+    "name": "Peschiera Borromeo",
+    "value": [
+      9.302779421843473,
+      45.442441868340886,
+      48638
+    ]
+  },
+  {
+    "name": "San Giovanni la Punta",
+    "value": [
+      15.092817851523632,
+      37.5770505578737,
+      48430
+    ]
+  },
+  {
+    "name": "Ruvo di Puglia",
+    "value": [
+      16.426255885445844,
+      41.040474111883135,
+      48390
+    ]
+  },
+  {
+    "name": "Mola di Bari",
+    "value": [
+      17.07663468783767,
+      41.03963816251104,
+      48354
+    ]
+  },
+  {
+    "name": "Montevarchi",
+    "value": [
+      11.551753091321057,
+      43.5006228747531,
+      48258
+    ]
+  },
+  {
+    "name": "Fossano",
+    "value": [
+      7.692798324533654,
+      44.54419210939683,
+      48250
+    ]
+  },
+  {
+    "name": "Thiene",
+    "value": [
+      11.484302402310329,
+      45.690803499610794,
+      48016
+    ]
+  },
+  {
+    "name": "Seveso",
+    "value": [
+      9.144735053672955,
+      45.643777929109135,
+      47954
+    ]
+  },
+  {
+    "name": "Castiglione delle Stiviere",
+    "value": [
+      10.49460305662306,
+      45.37879084755027,
+      47718
+    ]
+  },
+  {
+    "name": "Montecchio Maggiore",
+    "value": [
+      11.407699058178904,
+      45.513214486289094,
+      47662
+    ]
+  },
+  {
+    "name": "Dalmine",
+    "value": [
+      9.599668586675223,
+      45.64651186385779,
+      47540
+    ]
+  },
+  {
+    "name": "Sezze",
+    "value": [
+      13.056899107828574,
+      41.48949479583449,
+      47366
+    ]
+  },
+  {
+    "name": "Meda",
+    "value": [
+      9.157393416478579,
+      45.66433361150108,
+      47246
+    ]
+  },
+  {
+    "name": "Pompei",
+    "value": [
+      14.496083217392444,
+      40.74798944655582,
+      47224
+    ]
+  },
+  {
+    "name": "Albenga",
+    "value": [
+      8.184024120827134,
+      44.06371263027841,
+      47080
+    ]
+  },
+  {
+    "name": "Giulianova",
+    "value": [
+      13.941207370569497,
+      42.741038378163545,
+      47028
+    ]
+  },
+  {
+    "name": "Nocera Superiore",
+    "value": [
+      14.674739894242304,
+      40.738112640104376,
+      46990
+    ]
+  },
+  {
+    "name": "Muggiò",
+    "value": [
+      9.22541480974868,
+      45.58822218973557,
+      46966
+    ]
+  },
+  {
+    "name": "Cesano Boscone",
+    "value": [
+      9.087081888032632,
+      45.44135903849683,
+      46644
+    ]
+  },
+  {
+    "name": "Vigonza",
+    "value": [
+      11.971463466590203,
+      45.448827930562615,
+      46640
+    ]
+  },
+  {
+    "name": "Ottaviano",
+    "value": [
+      14.476661172805894,
+      40.842887952779165,
+      46486
+    ]
+  },
+  {
+    "name": "Figline e Incisa Valdarno",
+    "value": [
+      11.434717715825869,
+      43.624397298908335,
+      46426
+    ]
+  },
+  {
+    "name": "Nova Milanese",
+    "value": [
+      9.196335036746857,
+      45.588674817182316,
+      46354
+    ]
+  },
+  {
+    "name": "Bressanone/Brixen",
+    "value": [
+      11.684056246533304,
+      46.699548914307286,
+      46190
+    ]
+  },
+  {
+    "name": "Capoterra",
+    "value": [
+      8.969582142466752,
+      39.146334103811554,
+      46176
+    ]
+  },
+  {
+    "name": "Ventimiglia",
+    "value": [
+      7.560280092566947,
+      43.82209603165138,
+      45960
+    ]
+  },
+  {
+    "name": "Selvazzano Dentro",
+    "value": [
+      11.789373543371369,
+      45.399411245954745,
+      45878
+    ]
+  },
+  {
+    "name": "Frascati",
+    "value": [
+      12.669871370569812,
+      41.824731990886704,
+      45766
+    ]
+  },
+  {
+    "name": "Biancavilla",
+    "value": [
+      14.900710972297423,
+      37.67048494484081,
+      45760
+    ]
+  },
+  {
+    "name": "Orbassano",
+    "value": [
+      7.556001989327788,
+      45.005753961197456,
+      45716
+    ]
+  },
+  {
+    "name": "Copertino",
+    "value": [
+      18.05153973900665,
+      40.26946088726371,
+      45656
+    ]
+  },
+  {
+    "name": "Fucecchio",
+    "value": [
+      10.77774905083825,
+      43.76495304441752,
+      45632
+    ]
+  },
+  {
+    "name": "Pietrasanta",
+    "value": [
+      10.219736898192252,
+      43.959795494678836,
+      45462
+    ]
+  },
+  {
+    "name": "Poggiomarino",
+    "value": [
+      14.546786196960591,
+      40.80670503835192,
+      45218
+    ]
+  },
+  {
+    "name": "Mentana",
+    "value": [
+      12.66242526145237,
+      42.04016078001555,
+      45176
+    ]
+  },
+  {
+    "name": "Ivrea",
+    "value": [
+      7.891054508956365,
+      45.453922318709544,
+      45064
+    ]
+  },
+  {
+    "name": "Genzano di Roma",
+    "value": [
+      12.706676243434137,
+      41.67662888282149,
+      45022
+    ]
+  },
+  {
+    "name": "Capaccio Paestum",
+    "value": [
+      15.027546484502006,
+      40.44442708131481,
+      44824
+    ]
+  },
+  {
+    "name": "Paese",
+    "value": [
+      12.148819345848352,
+      45.69469394132577,
+      44438
+    ]
+  },
+  {
+    "name": "Santarcangelo di Romagna",
+    "value": [
+      12.43548579109375,
+      44.052391929855666,
+      44418
+    ]
+  },
+  {
+    "name": "Palestrina",
+    "value": [
+      12.857890334416371,
+      41.816472428260994,
+      44244
+    ]
+  },
+  {
+    "name": "Mondovì",
+    "value": [
+      7.813171193117994,
+      44.4088355931738,
+      44240
+    ]
+  },
+  {
+    "name": "Ceccano",
+    "value": [
+      13.331407782531409,
+      41.566438067619465,
+      44196
+    ]
+  },
+  {
+    "name": "Pachino",
+    "value": [
+      15.076871002129705,
+      36.70554243806183,
+      44168
+    ]
+  },
+  {
+    "name": "Ortona",
+    "value": [
+      14.372608810162792,
+      42.336973154136366,
+      43946
+    ]
+  },
+  {
+    "name": "Comacchio",
+    "value": [
+      12.162030575673139,
+      44.68342744737962,
+      43826
+    ]
+  },
+  {
+    "name": "San Nicola la Strada",
+    "value": [
+      14.330489155295933,
+      41.04955157660158,
+      43716
+    ]
+  },
+  {
+    "name": "Massarosa",
+    "value": [
+      10.32581488264097,
+      43.87009126552585,
+      43670
+    ]
+  },
+  {
+    "name": "Savigliano",
+    "value": [
+      7.636536430894409,
+      44.621209326737684,
+      43560
+    ]
+  },
+  {
+    "name": "Sarzana",
+    "value": [
+      9.971276735522569,
+      44.110912986897496,
+      43522
+    ]
+  },
+  {
+    "name": "Trezzano sul Naviglio",
+    "value": [
+      9.05815011708621,
+      45.42081503651324,
+      43446
+    ]
+  },
+  {
+    "name": "Ginosa",
+    "value": [
+      16.798269383802857,
+      40.50480853862525,
+      43440
+    ]
+  },
+  {
+    "name": "Sulmona",
+    "value": [
+      13.934392981446473,
+      42.065539006088244,
+      43392
+    ]
+  },
+  {
+    "name": "Casal di Principe",
+    "value": [
+      14.113663900156782,
+      41.02437934814541,
+      43348
+    ]
+  },
+  {
+    "name": "Colle di Val d'Elsa",
+    "value": [
+      11.094748242784094,
+      43.39244437240534,
+      43336
+    ]
+  },
+  {
+    "name": "Lumezzane",
+    "value": [
+      10.269538950858914,
+      45.64869856360735,
+      43218
+    ]
+  },
+  {
+    "name": "Corciano",
+    "value": [
+      12.290494532381029,
+      43.12878535194327,
+      43200
+    ]
+  },
+  {
+    "name": "Pergine Valsugana",
+    "value": [
+      11.236340472929935,
+      46.05845285229025,
+      43184
+    ]
+  },
+  {
+    "name": "Senago",
+    "value": [
+      9.119386284385016,
+      45.573473120151014,
+      43146
+    ]
+  },
+  {
+    "name": "Montecatini-Terme",
+    "value": [
+      10.782052812200106,
+      43.898318677342424,
+      43028
+    ]
+  },
+  {
+    "name": "Mercato San Severino",
+    "value": [
+      14.736253989645054,
+      40.77808240792601,
+      42902
+    ]
+  },
+  {
+    "name": "Cardito",
+    "value": [
+      14.294084679180362,
+      40.93856952779404,
+      42826
+    ]
+  },
+  {
+    "name": "Sondrio",
+    "value": [
+      9.85680096014421,
+      46.18004215670303,
+      42746
+    ]
+  },
+  {
+    "name": "San Bonifacio",
+    "value": [
+      11.286510876551128,
+      45.3968393483605,
+      42742
+    ]
+  },
+  {
+    "name": "Bastia Umbra",
+    "value": [
+      12.528930920407948,
+      43.064306424200375,
+      42704
+    ]
+  },
+  {
+    "name": "Gorgonzola",
+    "value": [
+      9.409840542017264,
+      45.52957378276988,
+      42620
+    ]
+  },
+  {
+    "name": "Cassano Magnago",
+    "value": [
+      8.829346505195346,
+      45.66861003818985,
+      42608
+    ]
+  },
+  {
+    "name": "Agropoli",
+    "value": [
+      15.0084341044555,
+      40.3511616512757,
+      42566
+    ]
+  },
+  {
+    "name": "Palma di Montechiaro",
+    "value": [
+      13.766152449327857,
+      37.18197912938146,
+      42472
+    ]
+  },
+  {
+    "name": "Suzzara",
+    "value": [
+      10.743779606270657,
+      45.00414382026961,
+      42460
+    ]
+  },
+  {
+    "name": "Borgomanero",
+    "value": [
+      8.469488430178119,
+      45.69794575925425,
+      42410
+    ]
+  },
+  {
+    "name": "Lentini",
+    "value": [
+      14.917051220729126,
+      37.33170465277176,
+      42366
+    ]
+  },
+  {
+    "name": "Martellago",
+    "value": [
+      12.159686594299078,
+      45.53518465680978,
+      42254
+    ]
+  },
+  {
+    "name": "Argenta",
+    "value": [
+      11.889082852013852,
+      44.622162417356314,
+      42238
+    ]
+  },
+  {
+    "name": "Trecate",
+    "value": [
+      8.740692073258575,
+      45.4323105433201,
+      42182
+    ]
+  },
+  {
+    "name": "Floridia",
+    "value": [
+      15.115489092289087,
+      37.08092321697008,
+      42164
+    ]
+  },
+  {
+    "name": "Bussolengo",
+    "value": [
+      10.845946315637649,
+      45.46629771677481,
+      41926
+    ]
+  },
+  {
+    "name": "Romano di Lombardia",
+    "value": [
+      9.750870141699622,
+      45.52236274587456,
+      41914
+    ]
+  },
+  {
+    "name": "Cortona",
+    "value": [
+      11.999963923086247,
+      43.261684124871834,
+      41754
+    ]
+  },
+  {
+    "name": "Monsummano Terme",
+    "value": [
+      10.829569606569754,
+      43.85484879296901,
+      41608
+    ]
+  },
+  {
+    "name": "Porto Torres",
+    "value": [
+      8.322991426928743,
+      40.937848399325965,
+      41600
+    ]
+  },
+  {
+    "name": "Cormano",
+    "value": [
+      9.164563956111724,
+      45.54371253053882,
+      41532
+    ]
+  },
+  {
+    "name": "Sestu",
+    "value": [
+      9.083270687472478,
+      39.31588219964345,
+      41494
+    ]
+  },
+  {
+    "name": "Ariano Irpino",
+    "value": [
+      15.111053878996097,
+      41.168665157689766,
+      41380
+    ]
+  },
+  {
+    "name": "Trentola Ducenta",
+    "value": [
+      14.163755680268576,
+      40.975859315661104,
+      41362
+    ]
+  },
+  {
+    "name": "Cornaredo",
+    "value": [
+      9.024179666670078,
+      45.49165537744696,
+      41320
+    ]
+  },
+  {
+    "name": "Recanati",
+    "value": [
+      13.531377482319467,
+      43.40128651992253,
+      41260
+    ]
+  },
+  {
+    "name": "Feltre",
+    "value": [
+      11.916478263976742,
+      46.040720695746124,
+      41244
+    ]
+  },
+  {
+    "name": "Isernia",
+    "value": [
+      14.21617769143644,
+      41.60724850271697,
+      41232
+    ]
+  },
+  {
+    "name": "Castel San Pietro Terme",
+    "value": [
+      11.54816548049413,
+      44.396215980164364,
+      41214
+    ]
+  },
+  {
+    "name": "Anagni",
+    "value": [
+      13.148460051001825,
+      41.73359483135692,
+      41206
+    ]
+  },
+  {
+    "name": "Castrovillari",
+    "value": [
+      16.236960828707485,
+      39.81154779345324,
+      41132
+    ]
+  },
+  {
+    "name": "Rosolini",
+    "value": [
+      14.909709506628323,
+      36.86442929243994,
+      41108
+    ]
+  },
+  {
+    "name": "Piazza Armerina",
+    "value": [
+      14.34856579913266,
+      37.384853896261944,
+      41058
+    ]
+  },
+  {
+    "name": "Salsomaggiore Terme",
+    "value": [
+      9.981374452038807,
+      44.80399524453683,
+      41012
+    ]
+  },
+  {
+    "name": "Colleferro",
+    "value": [
+      12.990262963407387,
+      41.73703608257476,
+      40912
+    ]
+  },
+  {
+    "name": "San Cataldo",
+    "value": [
+      13.927128661828279,
+      37.499416945656336,
+      40906
+    ]
+  },
+  {
+    "name": "Minturno",
+    "value": [
+      13.743960103683646,
+      41.26662009487849,
+      40870
+    ]
+  },
+  {
+    "name": "Palazzolo sull'Oglio",
+    "value": [
+      9.89027804268875,
+      45.59265571100515,
+      40780
+    ]
+  },
+  {
+    "name": "Abano Terme",
+    "value": [
+      11.793260349573936,
+      45.358656482339406,
+      40732
+    ]
+  },
+  {
+    "name": "Palo del Colle",
+    "value": [
+      16.65278531706579,
+      41.04104152207595,
+      40700
+    ]
+  },
+  {
+    "name": "Grottaferrata",
+    "value": [
+      12.679160452073036,
+      41.78780052723258,
+      40608
+    ]
+  },
+  {
+    "name": "Novate Milanese",
+    "value": [
+      9.140173939288484,
+      45.531850382780966,
+      40602
+    ]
+  },
+  {
+    "name": "Oderzo",
+    "value": [
+      12.497931510002612,
+      45.771896030759834,
+      40538
+    ]
+  },
+  {
+    "name": "Piove di Sacco",
+    "value": [
+      12.051965550316135,
+      45.29898818194995,
+      40520
+    ]
+  },
+  {
+    "name": "Vico Equense",
+    "value": [
+      14.453269481379385,
+      40.65175500503195,
+      40352
+    ]
+  },
+  {
+    "name": "Follonica",
+    "value": [
+      10.763692992600419,
+      42.961644971196186,
+      40344
+    ]
+  },
+  {
+    "name": "Pontassieve",
+    "value": [
+      11.425744074586692,
+      43.83401286831777,
+      40316
+    ]
+  },
+  {
+    "name": "Sessa Aurunca",
+    "value": [
+      13.893502479107035,
+      41.238090069066764,
+      40134
+    ]
+  },
+  {
+    "name": "Montalto Uffugo",
+    "value": [
+      16.178040490195947,
+      39.40184030860444,
+      40100
+    ]
+  },
+  {
+    "name": "Cittadella",
+    "value": [
+      11.768751903664452,
+      45.65460263308024,
+      40082
+    ]
+  },
+  {
+    "name": "Rivalta di Torino",
+    "value": [
+      7.520094601679712,
+      45.022486863389624,
+      40080
+    ]
+  },
+  {
+    "name": "Ferentino",
+    "value": [
+      13.248320609563573,
+      41.69473178360733,
+      39938
+    ]
+  },
+  {
+    "name": "Sacile",
+    "value": [
+      12.504717958358809,
+      45.945934628342094,
+      39896
+    ]
+  },
+  {
+    "name": "Lastra a Signa",
+    "value": [
+      11.083616922398749,
+      43.74487058005462,
+      39872
+    ]
+  },
+  {
+    "name": "Settimo Milanese",
+    "value": [
+      9.053430820299534,
+      45.48056547606456,
+      39802
+    ]
+  },
+  {
+    "name": "San Salvo",
+    "value": [
+      14.752512489963802,
+      42.04658856682276,
+      39762
+    ]
+  },
+  {
+    "name": "Viadana",
+    "value": [
+      10.5822821303885,
+      44.97661902484249,
+      39646
+    ]
+  },
+  {
+    "name": "Acquaviva delle Fonti",
+    "value": [
+      16.841447833827946,
+      40.88131556883137,
+      39454
+    ]
+  },
+  {
+    "name": "Cassano d'Adda",
+    "value": [
+      9.517673914754763,
+      45.52659113323171,
+      39400
+    ]
+  },
+  {
+    "name": "Castellana Grotte",
+    "value": [
+      17.186250660211346,
+      40.86747589279587,
+      39334
+    ]
+  },
+  {
+    "name": "Rovato",
+    "value": [
+      10.01045185537982,
+      45.545217261100056,
+      39254
+    ]
+  },
+  {
+    "name": "Chiari",
+    "value": [
+      9.9180992735748,
+      45.53319332654796,
+      39070
+    ]
+  },
+  {
+    "name": "Arese",
+    "value": [
+      9.073526240697596,
+      45.55027232446682,
+      39000
+    ]
+  },
+  {
+    "name": "Ischia",
+    "value": [
+      13.947590206537699,
+      40.72741400442525,
+      38998
+    ]
+  },
+  {
+    "name": "Zola Predosa",
+    "value": [
+      11.210525668930233,
+      44.494933787639276,
+      38958
+    ]
+  },
+  {
+    "name": "Bellaria-Igea Marina",
+    "value": [
+      12.463633977124047,
+      44.131733069076574,
+      38916
+    ]
+  },
+  {
+    "name": "Veroli",
+    "value": [
+      13.449330212869612,
+      41.718924419250875,
+      38902
+    ]
+  },
+  {
+    "name": "Villabate",
+    "value": [
+      13.442788676326055,
+      38.07869334167748,
+      38870
+    ]
+  },
+  {
+    "name": "Montoro",
+    "value": [
+      14.786458654491758,
+      40.82439236604164,
+      38848
+    ]
+  },
+  {
+    "name": "Sabaudia",
+    "value": [
+      13.030607456132936,
+      41.34346404190153,
+      38586
+    ]
+  },
+  {
+    "name": "Pescia",
+    "value": [
+      10.698470169791147,
+      43.94064209742254,
+      38524
+    ]
+  },
+  {
+    "name": "Gioia Tauro",
+    "value": [
+      15.920778699501366,
+      38.42987418926017,
+      38486
+    ]
+  },
+  {
+    "name": "Tremestieri Etneo",
+    "value": [
+      15.073623098829712,
+      37.57428465710557,
+      38468
+    ]
+  },
+  {
+    "name": "Orvieto",
+    "value": [
+      12.151844760343476,
+      42.73400295287774,
+      38398
+    ]
+  },
+  {
+    "name": "Casamassima",
+    "value": [
+      16.92460450003238,
+      40.94577971598919,
+      38376
+    ]
+  },
+  {
+    "name": "Giovinazzo",
+    "value": [
+      16.657423006355916,
+      41.160557125293444,
+      38252
+    ]
+  },
+  {
+    "name": "Gaeta",
+    "value": [
+      13.540476155579285,
+      41.23496624238415,
+      38230
+    ]
+  },
+  {
+    "name": "Corbetta",
+    "value": [
+      8.930168137813137,
+      45.46019453469882,
+      38224
+    ]
+  },
+  {
+    "name": "Casarano",
+    "value": [
+      18.17444800830423,
+      40.018340226451585,
+      38180
+    ]
+  },
+  {
+    "name": "Anguillara Sabazia",
+    "value": [
+      12.263540227213513,
+      42.07736147455142,
+      38140
+    ]
+  },
+  {
+    "name": "Montemurlo",
+    "value": [
+      11.056497579083892,
+      43.936394727820975,
+      38118
+    ]
+  },
+  {
+    "name": "Casalgrande",
+    "value": [
+      10.752632248818735,
+      44.588952916346635,
+      38082
+    ]
+  },
+  {
+    "name": "Scorzè",
+    "value": [
+      12.141183872821395,
+      45.575948973838344,
+      38058
+    ]
+  },
+  {
+    "name": "Signa",
+    "value": [
+      11.096979514883394,
+      43.793117728440734,
+      38058
+    ]
+  },
+  {
+    "name": "Cusano Milanino",
+    "value": [
+      9.184561524345046,
+      45.55267732010279,
+      38050
+    ]
+  },
+  {
+    "name": "Tradate",
+    "value": [
+      8.918018188664025,
+      45.71534582179863,
+      38048
+    ]
+  },
+  {
+    "name": "Spoltore",
+    "value": [
+      14.138521027919069,
+      42.44053664419511,
+      37994
+    ]
+  },
+  {
+    "name": "Acqui Terme",
+    "value": [
+      8.463778333908524,
+      44.68093035109801,
+      37950
+    ]
+  },
+  {
+    "name": "Gallipoli",
+    "value": [
+      18.026109347507248,
+      40.03140743668177,
+      37862
+    ]
+  },
+  {
+    "name": "Sant'Antonio Abate",
+    "value": [
+      14.538115994910012,
+      40.72399280613822,
+      37822
+    ]
+  },
+  {
+    "name": "Pozzallo",
+    "value": [
+      14.858378230563076,
+      36.738791384022484,
+      37802
+    ]
+  },
+  {
+    "name": "Zagarolo",
+    "value": [
+      12.793860971490728,
+      41.853194713319304,
+      37704
+    ]
+  },
+  {
+    "name": "Adria",
+    "value": [
+      12.045233533978816,
+      45.056885912253364,
+      37626
+    ]
+  },
+  {
+    "name": "Monserrato",
+    "value": [
+      9.133413101860242,
+      39.265867311753205,
+      37326
+    ]
+  },
+  {
+    "name": "Laives/Leifers",
+    "value": [
+      11.345099844325196,
+      46.43845433704935,
+      37318
+    ]
+  },
+  {
+    "name": "Ghedi",
+    "value": [
+      10.278747248824127,
+      45.39999003753564,
+      37050
+    ]
+  },
+  {
+    "name": "Castel Maggiore",
+    "value": [
+      11.353934121180544,
+      44.57194623501015,
+      37024
+    ]
+  },
+  {
+    "name": "Ceglie Messapica",
+    "value": [
+      17.514569844884377,
+      40.64345407457751,
+      37006
+    ]
+  },
+  {
+    "name": "Santa Marinella",
+    "value": [
+      11.903467107599019,
+      42.04528253384809,
+      36960
+    ]
+  },
+  {
+    "name": "Caronno Pertusella",
+    "value": [
+      9.046172252164148,
+      45.595218709179306,
+      36932
+    ]
+  },
+  {
+    "name": "Bracciano",
+    "value": [
+      12.162829013873747,
+      42.091532568139726,
+      36908
+    ]
+  },
+  {
+    "name": "Budrio",
+    "value": [
+      11.546180992726468,
+      44.562625334698446,
+      36878
+    ]
+  },
+  {
+    "name": "Castelfidardo",
+    "value": [
+      13.563080172279479,
+      43.46439101983779,
+      36878
+    ]
+  },
+  {
+    "name": "San Mauro Torinese",
+    "value": [
+      7.765663643848157,
+      45.103240141575455,
+      36848
+    ]
+  },
+  {
+    "name": "Pavullo nel Frignano",
+    "value": [
+      10.844169674778247,
+      44.33746156312983,
+      36740
+    ]
+  },
+  {
+    "name": "Acri",
+    "value": [
+      16.42846697742707,
+      39.494451193977405,
+      36720
+    ]
+  },
+  {
+    "name": "Melzo",
+    "value": [
+      9.42546879745241,
+      45.4982702007569,
+      36710
+    ]
+  },
+  {
+    "name": "Isola di Capo Rizzuto",
+    "value": [
+      17.084810375147978,
+      38.9591066215706,
+      36640
+    ]
+  },
+  {
+    "name": "Borgo San Lorenzo",
+    "value": [
+      11.404687083579956,
+      43.963290932298854,
+      36584
+    ]
+  },
+  {
+    "name": "Rutigliano",
+    "value": [
+      17.00690416898887,
+      40.992786522739976,
+      36430
+    ]
+  },
+  {
+    "name": "Valenza",
+    "value": [
+      8.629643434963986,
+      45.01892546101597,
+      36414
+    ]
+  },
+  {
+    "name": "Bronte",
+    "value": [
+      14.839482064420277,
+      37.80525128932165,
+      36358
+    ]
+  },
+  {
+    "name": "Casavatore",
+    "value": [
+      14.275613814490779,
+      40.89840799888752,
+      36320
+    ]
+  },
+  {
+    "name": "Melegnano",
+    "value": [
+      9.320112721654422,
+      45.35522210146267,
+      36238
+    ]
+  },
+  {
+    "name": "Noci",
+    "value": [
+      17.100598978659352,
+      40.76504518016493,
+      36200
+    ]
+  },
+  {
+    "name": "Savignano sul Rubicone",
+    "value": [
+      12.399216547669827,
+      44.101431682916626,
+      36158
+    ]
+  },
+  {
+    "name": "Ciriè",
+    "value": [
+      7.591758178184326,
+      45.21967505025184,
+      36146
+    ]
+  },
+  {
+    "name": "Calenzano",
+    "value": [
+      11.193923260023139,
+      43.90146298658222,
+      36122
+    ]
+  },
+  {
+    "name": "Piossasco",
+    "value": [
+      7.44983362781062,
+      44.98678168625741,
+      36058
+    ]
+  },
+  {
+    "name": "Aci Sant'Antonio",
+    "value": [
+      15.117646822309371,
+      37.624217526087484,
+      36050
+    ]
+  },
+  {
+    "name": "Palmi",
+    "value": [
+      15.872807296815601,
+      38.37795973412709,
+      35964
+    ]
+  },
+  {
+    "name": "Marsciano",
+    "value": [
+      12.307512006552951,
+      42.962083957217594,
+      35898
+    ]
+  },
+  {
+    "name": "Rocca di Papa",
+    "value": [
+      12.735641130962643,
+      41.75264767881192,
+      35890
+    ]
+  },
+  {
+    "name": "Arcore",
+    "value": [
+      9.323755086610744,
+      45.62969713647982,
+      35884
+    ]
+  },
+  {
+    "name": "Agliana",
+    "value": [
+      11.000995550643232,
+      43.895674151215935,
+      35874
+    ]
+  },
+  {
+    "name": "Ariccia",
+    "value": [
+      12.661021068784242,
+      41.704890084175986,
+      35872
+    ]
+  },
+  {
+    "name": "Carate Brianza",
+    "value": [
+      9.23762326685604,
+      45.67323611668291,
+      35856
+    ]
+  },
+  {
+    "name": "Capua",
+    "value": [
+      14.210074880724006,
+      41.115174720834354,
+      35828
+    ]
+  },
+  {
+    "name": "Somma Lombardo",
+    "value": [
+      8.698701711057256,
+      45.669143779889644,
+      35752
+    ]
+  },
+  {
+    "name": "Pianoro",
+    "value": [
+      11.356656283811715,
+      44.37663769838436,
+      35714
+    ]
+  },
+  {
+    "name": "San Vito dei Normanni",
+    "value": [
+      17.704003013306632,
+      40.6412636286733,
+      35684
+    ]
+  },
+  {
+    "name": "Narni",
+    "value": [
+      12.514008460892345,
+      42.50409135666573,
+      35600
+    ]
+  },
+  {
+    "name": "Riva del Garda",
+    "value": [
+      10.821258797856121,
+      45.88912934047123,
+      35574
+    ]
+  },
+  {
+    "name": "Policoro",
+    "value": [
+      16.668060496039047,
+      40.19668681147964,
+      35486
+    ]
+  },
+  {
+    "name": "Marcon",
+    "value": [
+      12.327385317929046,
+      45.55169353667456,
+      35466
+    ]
+  },
+  {
+    "name": "Ribera",
+    "value": [
+      13.288282477620792,
+      37.466689451818105,
+      35460
+    ]
+  },
+  {
+    "name": "Cordenons",
+    "value": [
+      12.728557099606318,
+      46.00475402579016,
+      35434
+    ]
+  },
+  {
+    "name": "Aci Castello",
+    "value": [
+      15.139392130776315,
+      37.55616181939481,
+      35382
+    ]
+  },
+  {
+    "name": "Arco",
+    "value": [
+      10.905761491400881,
+      45.92918886807965,
+      35308
+    ]
+  },
+  {
+    "name": "Domodossola",
+    "value": [
+      8.254061959674738,
+      46.122916999192256,
+      35252
+    ]
+  },
+  {
+    "name": "Sona",
+    "value": [
+      10.813851112228178,
+      45.428343411358355,
+      35210
+    ]
+  },
+  {
+    "name": "Saluzzo",
+    "value": [
+      7.49017817235573,
+      44.670063520533716,
+      35158
+    ]
+  },
+  {
+    "name": "Albino",
+    "value": [
+      9.82238839895118,
+      45.758321790047795,
+      35130
+    ]
+  },
+  {
+    "name": "Tolentino",
+    "value": [
+      13.312552399292041,
+      43.208042038506235,
+      35088
+    ]
+  },
+  {
+    "name": "Villorba",
+    "value": [
+      12.252564360949451,
+      45.7297132937126,
+      35088
+    ]
+  },
+  {
+    "name": "Pescantina",
+    "value": [
+      10.86120607794571,
+      45.490592302289414,
+      35086
+    ]
+  },
+  {
+    "name": "Forio",
+    "value": [
+      13.872174438171234,
+      40.72785664148427,
+      35078
+    ]
+  },
+  {
+    "name": "Siderno",
+    "value": [
+      16.275896832175082,
+      38.28645674240562,
+      35056
+    ]
+  },
+  {
+    "name": "Santa Maria di Sala",
+    "value": [
+      12.02716520926253,
+      45.50209978290613,
+      34916
+    ]
+  },
+  {
+    "name": "Castelfiorentino",
+    "value": [
+      10.959603444226541,
+      43.61844441154842,
+      34766
+    ]
+  },
+  {
+    "name": "Sinnai",
+    "value": [
+      9.335573132545528,
+      39.307066574700755,
+      34728
+    ]
+  },
+  {
+    "name": "Beinasco",
+    "value": [
+      7.590213975649552,
+      45.01629968531196,
+      34716
+    ]
+  },
+  {
+    "name": "Polignano a Mare",
+    "value": [
+      17.191445615643982,
+      40.972602166519906,
+      34672
+    ]
+  },
+  {
+    "name": "Maranello",
+    "value": [
+      10.870088444526587,
+      44.50813683779935,
+      34606
+    ]
+  },
+  {
+    "name": "Sestri Levante",
+    "value": [
+      9.428596595095485,
+      44.28657825672067,
+      34474
+    ]
+  },
+  {
+    "name": "Bareggio",
+    "value": [
+      8.999629979367144,
+      45.47466079350328,
+      34454
+    ]
+  },
+  {
+    "name": "Valenzano",
+    "value": [
+      16.88673731390736,
+      41.03535297879718,
+      34438
+    ]
+  },
+  {
+    "name": "Terzigno",
+    "value": [
+      14.480764910909695,
+      40.8027841441404,
+      34378
+    ]
+  },
+  {
+    "name": "Brunico/Bruneck",
+    "value": [
+      11.948939061687232,
+      46.79070750595637,
+      34286
+    ]
+  },
+  {
+    "name": "Monselice",
+    "value": [
+      11.756839245184917,
+      45.22869358759003,
+      34198
+    ]
+  },
+  {
+    "name": "Lonato del Garda",
+    "value": [
+      10.499895734072403,
+      45.4426556645025,
+      34178
+    ]
+  },
+  {
+    "name": "Campagna",
+    "value": [
+      15.12666623214639,
+      40.66312878454172,
+      34120
+    ]
+  },
+  {
+    "name": "Rubano",
+    "value": [
+      11.801793167771852,
+      45.435515227615646,
+      34120
+    ]
+  },
+  {
+    "name": "Cerea",
+    "value": [
+      11.218138301176497,
+      45.173676664920265,
+      34086
+    ]
+  },
+  {
+    "name": "Grumo Nevano",
+    "value": [
+      14.25908704787445,
+      40.93467853557526,
+      34068
+    ]
+  },
+  {
+    "name": "Carovigno",
+    "value": [
+      17.70138190446517,
+      40.70748874868662,
+      33966
+    ]
+  },
+  {
+    "name": "Nerviano",
+    "value": [
+      8.980004320082617,
+      45.55249134522176,
+      33964
+    ]
+  },
+  {
+    "name": "Vimodrone",
+    "value": [
+      9.287795367436544,
+      45.51510579887157,
+      33956
+    ]
+  },
+  {
+    "name": "Carlentini",
+    "value": [
+      14.997070793491226,
+      37.25191155440044,
+      33944
+    ]
+  },
+  {
+    "name": "Melfi",
+    "value": [
+      15.641408873668238,
+      41.034551162179866,
+      33924
+    ]
+  },
+  {
+    "name": "Tricase",
+    "value": [
+      18.359846182544903,
+      39.94134967486631,
+      33826
+    ]
+  },
+  {
+    "name": "Bovisio-Masciago",
+    "value": [
+      9.150614749331606,
+      45.61229428474434,
+      33724
+    ]
+  },
+  {
+    "name": "Baronissi",
+    "value": [
+      14.779487612863553,
+      40.740400210426714,
+      33718
+    ]
+  },
+  {
+    "name": "San Felice a Cancello",
+    "value": [
+      14.466037529221712,
+      40.9993405622173,
+      33648
+    ]
+  },
+  {
+    "name": "Medicina",
+    "value": [
+      11.668974557647305,
+      44.514168521075156,
+      33636
+    ]
+  },
+  {
+    "name": "Preganziol",
+    "value": [
+      12.227052053034273,
+      45.607620000317056,
+      33500
+    ]
+  },
+  {
+    "name": "Cercola",
+    "value": [
+      14.358810454817359,
+      40.8618200659676,
+      33466
+    ]
+  },
+  {
+    "name": "Fiorano Modenese",
+    "value": [
+      10.825885714508718,
+      44.53048208291042,
+      33422
+    ]
+  },
+  {
+    "name": "Pisticci",
+    "value": [
+      16.65434104140842,
+      40.362457357636,
+      33414
+    ]
+  },
+  {
+    "name": "Gussago",
+    "value": [
+      10.151271548135488,
+      45.59039285473502,
+      33370
+    ]
+  },
+  {
+    "name": "Porto Mantovano",
+    "value": [
+      10.755464361208652,
+      45.192274105385444,
+      33352
+    ]
+  },
+  {
+    "name": "Fiano Romano",
+    "value": [
+      12.596675128914583,
+      42.15607821866873,
+      33332
+    ]
+  },
+  {
+    "name": "San Martino Buon Albergo",
+    "value": [
+      11.09860525060001,
+      45.41991542409415,
+      33232
+    ]
+  },
+  {
+    "name": "Orta Nova",
+    "value": [
+      15.721440561304693,
+      41.321356922510695,
+      33218
+    ]
+  },
+  {
+    "name": "Cattolica",
+    "value": [
+      12.735430749208327,
+      43.958924283482034,
+      33214
+    ]
+  },
+  {
+    "name": "Malnate",
+    "value": [
+      8.882358029606785,
+      45.797290060282684,
+      33196
+    ]
+  },
+  {
+    "name": "Alpignano",
+    "value": [
+      7.517035255298244,
+      45.100953591546386,
+      33144
+    ]
+  },
+  {
+    "name": "Vedelago",
+    "value": [
+      12.022360112371997,
+      45.69208088064645,
+      33132
+    ]
+  },
+  {
+    "name": "Castenaso",
+    "value": [
+      11.465175406991115,
+      44.511210265332636,
+      33110
+    ]
+  },
+  {
+    "name": "Bagnacavallo",
+    "value": [
+      12.005733812517905,
+      44.439272390580726,
+      33102
+    ]
+  },
+  {
+    "name": "Reggello",
+    "value": [
+      11.520545395944843,
+      43.696617789840936,
+      33100
+    ]
+  },
+  {
+    "name": "San Giovanni Valdarno",
+    "value": [
+      11.523891398496374,
+      43.55797098615192,
+      33084
+    ]
+  },
+  {
+    "name": "Ispica",
+    "value": [
+      14.932965932000283,
+      36.75917877131194,
+      33036
+    ]
+  },
+  {
+    "name": "Negrar di Valpolicella",
+    "value": [
+      10.952780958188645,
+      45.53857992990499,
+      32982
+    ]
+  },
+  {
+    "name": "Adelfia",
+    "value": [
+      16.87029476306022,
+      40.99151367070771,
+      32904
+    ]
+  },
+  {
+    "name": "Caravaggio",
+    "value": [
+      9.65352841271351,
+      45.49237767979774,
+      32876
+    ]
+  },
+  {
+    "name": "Collesalvetti",
+    "value": [
+      10.433982007343038,
+      43.574372687008136,
+      32840
+    ]
+  },
+  {
+    "name": "Martinsicuro",
+    "value": [
+      13.911371255644989,
+      42.86630986365705,
+      32832
+    ]
+  },
+  {
+    "name": "Sant'Elpidio a Mare",
+    "value": [
+      13.69746231881925,
+      43.24371263956168,
+      32750
+    ]
+  },
+  {
+    "name": "San Cesareo",
+    "value": [
+      12.785613392183734,
+      41.82679543800404,
+      32732
+    ]
+  },
+  {
+    "name": "Torremaggiore",
+    "value": [
+      15.239645435337252,
+      41.66480197358935,
+      32696
+    ]
+  },
+  {
+    "name": "San Casciano in Val di Pesa",
+    "value": [
+      11.199229963400105,
+      43.6418634135845,
+      32602
+    ]
+  },
+  {
+    "name": "Giaveno",
+    "value": [
+      7.304958959290873,
+      45.024713050014164,
+      32572
+    ]
+  },
+  {
+    "name": "Erba",
+    "value": [
+      9.218015900296141,
+      45.811922097513445,
+      32570
+    ]
+  },
+  {
+    "name": "Cassano all'Ionio",
+    "value": [
+      16.391115643693933,
+      39.75200029698206,
+      32568
+    ]
+  },
+  {
+    "name": "Lusciano",
+    "value": [
+      14.185006279757609,
+      40.96299141557835,
+      32550
+    ]
+  },
+  {
+    "name": "Palma Campania",
+    "value": [
+      14.557288498343679,
+      40.85842930284818,
+      32510
+    ]
+  },
+  {
+    "name": "Umbertide",
+    "value": [
+      12.29145010700935,
+      43.28633176699523,
+      32504
+    ]
+  },
+  {
+    "name": "Noale",
+    "value": [
+      12.067766320845095,
+      45.55356890623836,
+      32438
+    ]
+  },
+  {
+    "name": "Bovolone",
+    "value": [
+      11.116606282146654,
+      45.264218384735706,
+      32432
+    ]
+  },
+  {
+    "name": "Leini",
+    "value": [
+      7.719503112028314,
+      45.18758934459346,
+      32418
+    ]
+  },
+  {
+    "name": "Samarate",
+    "value": [
+      8.782514203061153,
+      45.62342786539128,
+      32368
+    ]
+  },
+  {
+    "name": "Nonantola",
+    "value": [
+      11.055977508095182,
+      44.685191803762656,
+      32312
+    ]
+  },
+  {
+    "name": "Concorezzo",
+    "value": [
+      9.333868725236956,
+      45.59131608219205,
+      32210
+    ]
+  },
+  {
+    "name": "Valeggio sul Mincio",
+    "value": [
+      10.741839404802576,
+      45.35378038777335,
+      32118
+    ]
+  },
+  {
+    "name": "Altopascio",
+    "value": [
+      10.683102482652004,
+      43.81738697492857,
+      32106
+    ]
+  },
+  {
+    "name": "Lonigo",
+    "value": [
+      11.383243855476207,
+      45.385413344994085,
+      32024
+    ]
+  },
+  {
+    "name": "Scordia",
+    "value": [
+      14.849813029830312,
+      37.300927654352144,
+      31998
+    ]
+  },
+  {
+    "name": "Lentate sul Seveso",
+    "value": [
+      9.119238806497039,
+      45.67679652918719,
+      31976
+    ]
+  },
+  {
+    "name": "Brusciano",
+    "value": [
+      14.421947996743357,
+      40.92639061331624,
+      31942
+    ]
+  },
+  {
+    "name": "Este",
+    "value": [
+      11.65933640993114,
+      45.21961956665152,
+      31920
+    ]
+  },
+  {
+    "name": "Castellaneta",
+    "value": [
+      16.89637473317657,
+      40.58304280064487,
+      31846
+    ]
+  },
+  {
+    "name": "Saviano",
+    "value": [
+      14.502539441786306,
+      40.89985352611695,
+      31808
+    ]
+  },
+  {
+    "name": "Darfo Boario Terme",
+    "value": [
+      10.197847981275771,
+      45.8869158750187,
+      31804
+    ]
+  },
+  {
+    "name": "Grottammare",
+    "value": [
+      13.850735228085208,
+      42.98042252949902,
+      31802
+    ]
+  },
+  {
+    "name": "Codroipo",
+    "value": [
+      12.985642474014746,
+      45.958962208779916,
+      31658
+    ]
+  },
+  {
+    "name": "Tarquinia",
+    "value": [
+      11.765538795125751,
+      42.25657599930668,
+      31658
+    ]
+  },
+  {
+    "name": "Agrate Brianza",
+    "value": [
+      9.359006242791219,
+      45.57497611619858,
+      31616
+    ]
+  },
+  {
+    "name": "Zevio",
+    "value": [
+      11.122115473632693,
+      45.36210480959228,
+      31614
+    ]
+  },
+  {
+    "name": "Molinella",
+    "value": [
+      11.685762462357092,
+      44.6083237243571,
+      31610
+    ]
+  },
+  {
+    "name": "Casalpusterlengo",
+    "value": [
+      9.629529048481665,
+      45.19529897525234,
+      31574
+    ]
+  },
+  {
+    "name": "Azzano Decimo",
+    "value": [
+      12.691428461885263,
+      45.88229832726821,
+      31568
+    ]
+  },
+  {
+    "name": "Cadoneghe",
+    "value": [
+      11.918095684663177,
+      45.45742333097848,
+      31560
+    ]
+  },
+  {
+    "name": "Pieve Emanuele",
+    "value": [
+      9.195772446292425,
+      45.35193776693515,
+      31552
+    ]
+  },
+  {
+    "name": "Galliate",
+    "value": [
+      8.712518076349482,
+      45.48548216068957,
+      31500
+    ]
+  },
+  {
+    "name": "Codogno",
+    "value": [
+      9.695068703006717,
+      45.16764210649367,
+      31406
+    ]
+  },
+  {
+    "name": "Concesio",
+    "value": [
+      10.214727819847749,
+      45.61134328182287,
+      31394
+    ]
+  },
+  {
+    "name": "Carugate",
+    "value": [
+      9.341786399213106,
+      45.55128791446658,
+      31376
+    ]
+  },
+  {
+    "name": "Copparo",
+    "value": [
+      11.860824956454628,
+      44.902402207253566,
+      31362
+    ]
+  },
+  {
+    "name": "Palagiano",
+    "value": [
+      17.021119040520173,
+      40.55200951938963,
+      31362
+    ]
+  },
+  {
+    "name": "Valmontone",
+    "value": [
+      12.91768868825701,
+      41.77034905123489,
+      31354
+    ]
+  },
+  {
+    "name": "Certaldo",
+    "value": [
+      11.080835662449534,
+      43.56367386375669,
+      31334
+    ]
+  },
+  {
+    "name": "Mortara",
+    "value": [
+      8.748117946011975,
+      45.25015449418732,
+      31292
+    ]
+  },
+  {
+    "name": "Ponsacco",
+    "value": [
+      10.63493017981865,
+      43.616522985223064,
+      31280
+    ]
+  },
+  {
+    "name": "Pianezza",
+    "value": [
+      7.553907128250399,
+      45.11387546462323,
+      31186
+    ]
+  },
+  {
+    "name": "Soliera",
+    "value": [
+      10.94170950000272,
+      44.74773284977166,
+      31086
+    ]
+  },
+  {
+    "name": "Porto San Giorgio",
+    "value": [
+      13.786483559923658,
+      43.178064227005834,
+      31084
+    ]
+  },
+  {
+    "name": "Palagonia",
+    "value": [
+      14.767830142604279,
+      37.350401925624645,
+      31012
+    ]
+  },
+  {
+    "name": "Todi",
+    "value": [
+      12.411446331419818,
+      42.77637930770582,
+      31000
+    ]
+  },
+  {
+    "name": "Besana in Brianza",
+    "value": [
+      9.273779236809787,
+      45.695646672305536,
+      30974
+    ]
+  },
+  {
+    "name": "Porto Empedocle",
+    "value": [
+      13.5070786458402,
+      37.31053179081572,
+      30958
+    ]
+  },
+  {
+    "name": "San Giovanni in Fiore",
+    "value": [
+      16.64984386848852,
+      39.26776958686761,
+      30922
+    ]
+  },
+  {
+    "name": "Silvi",
+    "value": [
+      14.096524451437132,
+      42.55285457751613,
+      30880
+    ]
+  },
+  {
+    "name": "Potenza Picena",
+    "value": [
+      13.644310169860832,
+      43.370595303697264,
+      30866
+    ]
+  },
+  {
+    "name": "Pedara",
+    "value": [
+      15.05193704081974,
+      37.639078252635805,
+      30802
+    ]
+  },
+  {
+    "name": "Vinovo",
+    "value": [
+      7.628963020498658,
+      44.95539071586705,
+      30674
+    ]
+  },
+  {
+    "name": "Finale Emilia",
+    "value": [
+      11.266780745628663,
+      44.849146629711456,
+      30670
+    ]
+  },
+  {
+    "name": "Cassola",
+    "value": [
+      11.781182029329017,
+      45.74415311489925,
+      30632
+    ]
+  },
+  {
+    "name": "Frattaminore",
+    "value": [
+      14.271924025743495,
+      40.956101773133426,
+      30594
+    ]
+  },
+  {
+    "name": "Sant'Arpino",
+    "value": [
+      14.250038398845204,
+      40.95769295811955,
+      30576
+    ]
+  },
+  {
+    "name": "San Vito al Tagliamento",
+    "value": [
+      12.861618043923196,
+      45.91442717864256,
+      30506
+    ]
+  },
+  {
+    "name": "Castellarano",
+    "value": [
+      10.70187037777886,
+      44.522852160373915,
+      30440
+    ]
+  },
+  {
+    "name": "Sansepolcro",
+    "value": [
+      12.137136113135378,
+      43.58957721562919,
+      30326
+    ]
+  },
+  {
+    "name": "Sorrento",
+    "value": [
+      14.380600630628269,
+      40.61754357154176,
+      30326
+    ]
+  },
+  {
+    "name": "Castiglione del Lago",
+    "value": [
+      12.017120931872876,
+      43.10489139394838,
+      30316
+    ]
+  },
+  {
+    "name": "Sava",
+    "value": [
+      17.536130451291484,
+      40.397774169715085,
+      30312
+    ]
+  },
+  {
+    "name": "Cassano delle Murge",
+    "value": [
+      16.749417072678003,
+      40.881357182260736,
+      30302
+    ]
+  },
+  {
+    "name": "Campodarsego",
+    "value": [
+      11.924635409995023,
+      45.50240085223601,
+      30268
+    ]
+  },
+  {
+    "name": "Paola",
+    "value": [
+      16.062368923066785,
+      39.36156480249535,
+      30242
+    ]
+  },
+  {
+    "name": "Mottola",
+    "value": [
+      17.03232233970319,
+      40.6790504407434,
+      30238
+    ]
+  },
+  {
+    "name": "Pontinia",
+    "value": [
+      13.111985489819485,
+      41.40264201458442,
+      30198
+    ]
+  },
+  {
+    "name": "Castelnuovo Rangone",
+    "value": [
+      10.929922712413743,
+      44.561869667441584,
+      30178
+    ]
+  },
+  {
+    "name": "Casalmaggiore",
+    "value": [
+      10.454291884347782,
+      44.98694711076679,
+      30176
+    ]
+  },
+  {
+    "name": "Borgo Virgilio",
+    "value": [
+      10.78646819231083,
+      45.08173294936036,
+      30104
+    ]
+  },
+  {
+    "name": "Capurso",
+    "value": [
+      16.92387374328403,
+      41.041498542370725,
+      30064
+    ]
+  },
+  {
+    "name": "Dolo",
+    "value": [
+      12.086944386425547,
+      45.419464568912424,
+      30064
+    ]
+  },
+  {
+    "name": "Civita Castellana",
+    "value": [
+      12.437135409843338,
+      42.301171057790185,
+      30062
+    ]
+  },
+  {
+    "name": "Volpiano",
+    "value": [
+      7.783844815211671,
+      45.194526067281224,
+      30062
+    ]
+  },
+  {
+    "name": "Cerro Maggiore",
+    "value": [
+      8.965230922312442,
+      45.58950334060264,
+      30060
+    ]
+  },
+  {
+    "name": "Vallefoglia",
+    "value": [
+      12.736959256334185,
+      43.82769034289461,
+      30012
+    ]
+  }
+];
+const franceData = 
+[{"name": "Paris", "value": [2.352, 48.857, 2133111]}, {"name": "Marseille", "value": [5.37, 43.296, 873076]}, {"name": "Lyon", "value": [4.836, 45.764, 522250]}, {"name": "Toulouse", "value": [1.432, 43.596, 504078]}, {"name": "Nice", "value": [7.238, 43.712, 348085]}, {"name": "Nantes", "value": [-1.548, 47.232, 323204]}, {"name": "Montpellier", "value": [3.868, 43.613, 302454]}, {"name": "Strasbourg", "value": [7.768, 48.571, 291313]}, {"name": "Bordeaux", "value": [-0.574, 44.857, 261804]}, {"name": "Lille", "value": [3.048, 50.632, 236710]}, {"name": "Rennes", "value": [-1.682, 48.112, 225081]}, {"name": "Toulon", "value": [5.932, 43.136, 180452]}, {"name": "Reims", "value": [4.04, 49.252, 179380]}, {"name": "Saint-Étienne", "value": [4.379, 45.43, 172718]}, {"name": "Le Havre", "value": [0.14, 49.498, 166058]}, {"name": "Dijon", "value": [5.038, 47.323, 159346]}, {"name": "Grenoble", "value": [5.721, 45.182, 157477]}, {"name": "Angers", "value": [-0.556, 47.477, 157175]}, {"name": "Villeurbanne", "value": [4.888, 45.771, 156928]}, {"name": "Saint-Denis", "value": [55.447, -20.933, 154765]}, {"name": "Nîmes", "value": [4.348, 43.845, 148104]}, {"name": "Aix-en-Provence", "value": [5.399, 43.536, 147478]}, {"name": "Clermont-Ferrand", "value": [3.116, 45.786, 147327]}, {"name": "Le Mans", "value": [0.2, 47.988, 145004]}, {"name": "Brest", "value": [-4.503, 48.4, 139619]}, {"name": "Tours", "value": [0.696, 47.399, 137658]}, {"name": "Amiens", "value": [2.29, 49.901, 133625]}, {"name": "Annecy", "value": [6.126, 45.891, 131715]}, {"name": "Limoges", "value": [1.249, 45.854, 129760]}, {"name": "Metz", "value": [6.196, 49.108, 120874]}, {"name": "Boulogne-Billancourt", "value": [2.239, 48.837, 119808]}, {"name": "Perpignan", "value": [2.899, 42.697, 119656]}, {"name": "Besançon", "value": [6.02, 47.255, 119198]}, {"name": "Orléans", "value": [1.916, 47.883, 116617]}, {"name": "Rouen", "value": [1.093, 49.441, 114083]}, {"name": "Saint-Denis", "value": [2.359, 48.93, 113942]}, {"name": "Montreuil", "value": [2.448, 48.863, 111455]}, {"name": "Caen", "value": [-0.37, 49.185, 108200]}, {"name": "Argenteuil", "value": [2.241, 48.951, 107221]}, {"name": "Mulhouse", "value": [7.326, 47.749, 106341]}, {"name": "Saint-Paul", "value": [55.322, -21.044, 105240]}, {"name": "Nancy", "value": [6.176, 48.69, 104260]}, {"name": "Tourcoing", "value": [3.159, 50.725, 99011]}, {"name": "Roubaix", "value": [3.183, 50.688, 98892]}, {"name": "Nanterre", "value": [2.207, 48.896, 97351]}, {"name": "Vitry-sur-Seine", "value": [2.394, 48.788, 96205]}, {"name": "Créteil", "value": [2.455, 48.784, 92989]}, {"name": "Avignon", "value": [4.841, 43.935, 90330]}, {"name": "Poitiers", "value": [0.36, 46.584, 90240]}, {"name": "Aubervilliers", "value": [2.384, 48.912, 90071]}, {"name": "Asnières-sur-Seine", "value": [2.288, 48.915, 89662]}, {"name": "Colombes", "value": [2.247, 48.922, 88870]}, {"name": "Dunkerque", "value": [2.338, 51.031, 86788]}, {"name": "Aulnay-sous-Bois", "value": [2.493, 48.946, 86135]}, {"name": "Saint-Pierre", "value": [55.494, -21.312, 84077]}, {"name": "Versailles", "value": [2.118, 48.803, 83587]}, {"name": "Le Tampon", "value": [55.558, -21.223, 81943]}, {"name": "Courbevoie", "value": [2.256, 48.898, 81516]}, {"name": "Béziers", "value": [3.231, 43.348, 80341]}, {"name": "La Rochelle", "value": [-1.175, 46.162, 78535]}, {"name": "Rueil-Malmaison", "value": [2.177, 48.869, 78186]}, {"name": "Cherbourg-en-Cotentin", "value": [-1.634, 49.633, 77808]}, {"name": "Champigny-sur-Marne", "value": [2.517, 48.817, 77724]}, {"name": "Pau", "value": [-0.35, 43.32, 77066]}, {"name": "Mérignac", "value": [-0.682, 44.832, 75729]}, {"name": "Saint-Maur-des-Fossés", "value": [2.494, 48.799, 75441]}, {"name": "Antibes", "value": [7.106, 43.588, 75130]}, {"name": "Fort-de-France", "value": [-61.069, 14.641, 74921]}, {"name": "Ajaccio", "value": [8.701, 41.935, 73822]}, {"name": "Cannes", "value": [7.004, 43.553, 73255]}, {"name": "Saint-Nazaire", "value": [-2.254, 47.28, 72057]}, {"name": "Mamoudzou", "value": [45.193, -12.79, 71437]}, {"name": "Drancy", "value": [2.445, 48.923, 71363]}, {"name": "Noisy-le-Grand", "value": [2.564, 48.836, 70374]}, {"name": "Issy-les-Moulineaux", "value": [2.264, 48.824, 68580]}, {"name": "Cergy", "value": [2.051, 49.04, 68348]}, {"name": "Levallois-Perret", "value": [2.287, 48.895, 68009]}, {"name": "Colmar", "value": [7.385, 48.11, 67730]}, {"name": "Calais", "value": [1.876, 50.95, 67380]}, {"name": "Pessac", "value": [-0.676, 44.792, 66760]}, {"name": "Vénissieux", "value": [4.881, 45.704, 66363]}, {"name": "Évry-Courcouronnes", "value": [2.44, 48.63, 66177]}, {"name": "Clichy", "value": [2.306, 48.904, 64849]}, {"name": "Valence", "value": [4.914, 44.923, 64483]}, {"name": "Ivry-sur-Seine", "value": [2.388, 48.813, 64001]}, {"name": "Bourges", "value": [2.404, 47.075, 63702]}, {"name": "Quimper", "value": [-4.091, 47.997, 63642]}, {"name": "Cayenne", "value": [-52.501, 5.022, 63468]}, {"name": "Antony", "value": [2.299, 48.75, 63232]}, {"name": "Troyes", "value": [4.078, 48.297, 62782]}, {"name": "La Seyne-sur-Mer", "value": [5.871, 43.088, 62763]}, {"name": "Villeneuve-d'Ascq", "value": [3.154, 50.632, 62067]}, {"name": "Montauban", "value": [1.364, 44.022, 61919]}, {"name": "Pantin", "value": [2.409, 48.898, 60800]}, {"name": "Chambéry", "value": [5.909, 45.583, 59856]}, {"name": "Niort", "value": [-0.465, 46.328, 59309]}, {"name": "Neuilly-sur-Seine", "value": [2.266, 48.885, 59267]}, {"name": "Sarcelles", "value": [2.382, 48.99, 58424]}, {"name": "Le Blanc-Mesnil", "value": [2.461, 48.94, 58257]}, {"name": "Maisons-Alfort", "value": [2.438, 48.806, 58068]}, {"name": "Lorient", "value": [-3.378, 47.75, 57846]}, {"name": "Villejuif", "value": [2.36, 48.793, 57753]}, {"name": "Saint-André", "value": [55.643, -20.963, 57150]}, {"name": "Fréjus", "value": [6.764, 43.472, 57082]}, {"name": "Beauvais", "value": [2.086, 49.437, 56677]}, {"name": "Narbonne", "value": [3.02, 43.165, 56395]}, {"name": "Meaux", "value": [2.9, 48.957, 55616]}, {"name": "Hyères", "value": [6.189, 43.102, 55103]}, {"name": "Bobigny", "value": [2.439, 48.908, 55056]}, {"name": "La Roche-sur-Yon", "value": [-1.408, 46.668, 54952]}, {"name": "Clamart", "value": [2.255, 48.796, 54491]}, {"name": "Vannes", "value": [-2.757, 47.66, 54420]}, {"name": "Chelles", "value": [2.597, 48.884, 54309]}, {"name": "Cholet", "value": [-0.878, 47.045, 53936]}, {"name": "Saint-Louis", "value": [55.421, -21.234, 53935]}, {"name": "Épinay-sur-Seine", "value": [2.314, 48.955, 53489]}, {"name": "Saint-Ouen-sur-Seine", "value": [2.333, 48.91, 53207]}, {"name": "Saint-Quentin", "value": [3.278, 49.847, 52958]}, {"name": "Bondy", "value": [2.484, 48.902, 52905]}, {"name": "Bayonne", "value": [-1.466, 43.492, 52749]}, {"name": "Corbeil-Essonnes", "value": [2.469, 48.604, 52683]}, {"name": "Cagnes-sur-Mer", "value": [7.153, 43.672, 52580]}, {"name": "Vaulx-en-Velin", "value": [4.926, 45.786, 52139]}, {"name": "Les Abymes", "value": [-61.502, 16.273, 52118]}, {"name": "Sevran", "value": [2.531, 48.939, 51845]}, {"name": "Fontenay-sous-Bois", "value": [2.474, 48.851, 51812]}, {"name": "Sartrouville", "value": [2.175, 48.94, 51220]}, {"name": "Massy", "value": [2.275, 48.728, 50962]}, {"name": "Arles", "value": [4.662, 43.547, 50415]}, {"name": "Saint-Laurent-du-Maroni", "value": [-53.983, 4.965, 50250]}, {"name": "Albi", "value": [2.147, 43.926, 49714]}, {"name": "Laval", "value": [-0.766, 48.061, 49657]}, {"name": "Saint-Herblain", "value": [-1.634, 47.224, 49537]}, {"name": "Gennevilliers", "value": [2.294, 48.934, 49410]}, {"name": "Suresnes", "value": [2.22, 48.87, 49104]}, {"name": "Saint-Priest", "value": [4.949, 45.702, 48822]}, {"name": "Vincennes", "value": [2.438, 48.847, 48798]}, {"name": "Bastia", "value": [9.425, 42.686, 48768]}, {"name": "Martigues", "value": [5.05, 43.38, 48568]}, {"name": "Les Sables-d'Olonne", "value": [-1.793, 46.501, 48402]}, {"name": "Grasse", "value": [6.932, 43.656, 48323]}, {"name": "Montrouge", "value": [2.316, 48.815, 47657]}, {"name": "Aubagne", "value": [5.563, 43.294, 47342]}, {"name": "Saint-Malo", "value": [-1.981, 48.64, 47323]}, {"name": "Évreux", "value": [1.142, 49.02, 47289]}, {"name": "La Courneuve", "value": [2.4, 48.932, 47160]}, {"name": "Blois", "value": [1.306, 47.582, 46813]}, {"name": "Brive-la-Gaillarde", "value": [1.519, 45.144, 46599]}, {"name": "Charleville-Mézières", "value": [4.717, 49.775, 46398]}, {"name": "Meudon", "value": [2.227, 48.804, 46342]}, {"name": "Carcassonne", "value": [2.344, 43.209, 46218]}, {"name": "Choisy-le-Roi", "value": [2.417, 48.764, 46129]}, {"name": "Noisy-le-Sec", "value": [2.459, 48.891, 46094]}, {"name": "Livry-Gargan", "value": [2.535, 48.92, 46028]}, {"name": "Rosny-sous-Bois", "value": [2.486, 48.875, 45655]}, {"name": "Talence", "value": [-0.591, 44.806, 45225]}, {"name": "Belfort", "value": [6.845, 47.647, 45155]}, {"name": "Alfortville", "value": [2.421, 48.796, 45046]}, {"name": "Chalon-sur-Saône", "value": [4.852, 46.79, 45031]}, {"name": "Salon-de-Provence", "value": [5.068, 43.646, 44731]}, {"name": "Sète", "value": [3.647, 43.392, 44712]}, {"name": "Istres", "value": [4.951, 43.55, 44577]}, {"name": "Mantes-la-Jolie", "value": [1.693, 48.998, 44539]}, {"name": "Saint-Germain-en-Laye", "value": [2.099, 48.941, 44380]}, {"name": "Saint-Brieuc", "value": [-2.762, 48.515, 44224]}, {"name": "Tarbes", "value": [0.066, 43.235, 43955]}, {"name": "Alès", "value": [4.088, 44.125, 43892]}, {"name": "Châlons-en-Champagne", "value": [4.379, 48.964, 43877]}, {"name": "Bagneux", "value": [2.31, 48.798, 43699]}, {"name": "Puteaux", "value": [2.238, 48.884, 43672]}, {"name": "Caluire-et-Cuire", "value": [4.851, 45.797, 43572]}, {"name": "Bron", "value": [4.912, 45.734, 43049]}, {"name": "Rezé", "value": [-1.55, 47.176, 42998]}, {"name": "Valenciennes", "value": [3.516, 50.359, 42991]}, {"name": "Châteauroux", "value": [1.694, 46.803, 42968]}, {"name": "Garges-lès-Gonesse", "value": [2.405, 48.97, 42841]}, {"name": "Castres", "value": [2.238, 43.616, 42672]}, {"name": "Arras", "value": [2.766, 50.29, 42600]}, {"name": "Melun", "value": [2.658, 48.544, 42367]}, {"name": "Thionville", "value": [6.129, 49.376, 42163]}, {"name": "Le Cannet", "value": [7.006, 43.573, 41597]}, {"name": "Bourg-en-Bresse", "value": [5.246, 46.205, 41525]}, {"name": "Anglet", "value": [-1.516, 43.492, 41153]}, {"name": "Angoulême", "value": [0.145, 45.647, 41086]}, {"name": "Boulogne-sur-Mer", "value": [1.608, 50.727, 40910]}, {"name": "Wattrelos", "value": [3.216, 50.706, 40836]}, {"name": "Gap", "value": [6.065, 44.58, 40500]}, {"name": "Villenave-d'Ornon", "value": [-0.558, 44.773, 40500]}, {"name": "Montélimar", "value": [4.749, 44.554, 40399]}, {"name": "Compiègne", "value": [2.853, 49.399, 40394]}, {"name": "Stains", "value": [2.385, 48.957, 40359]}, {"name": "Gagny", "value": [2.545, 48.882, 40189]}, {"name": "Colomiers", "value": [1.327, 43.612, 40159]}, {"name": "Poissy", "value": [2.027, 48.924, 40016]}, {"name": "Draguignan", "value": [6.454, 43.536, 39745]}, {"name": "Douai", "value": [3.092, 50.382, 39648]}, {"name": "Le Lamentin", "value": [-60.993, 14.625, 39641]}, {"name": "Bagnolet", "value": [2.423, 48.869, 39366]}, {"name": "Marcq-en-Barœul", "value": [3.101, 50.675, 39356]}, {"name": "Saint-Joseph", "value": [55.642, -21.306, 38807]}, {"name": "Villepinte", "value": [2.536, 48.959, 38725]}, {"name": "Saint-Martin-d'Hères", "value": [5.765, 45.176, 38454]}, {"name": "Chartres", "value": [1.506, 48.447, 38447]}, {"name": "Pontault-Combault", "value": [2.614, 48.787, 38258]}, {"name": "Joué-lès-Tours", "value": [0.654, 47.334, 38183]}, {"name": "Annemasse", "value": [6.242, 46.191, 37918]}, {"name": "Neuilly-sur-Marne", "value": [2.54, 48.862, 37531]}, {"name": "Franconville", "value": [2.224, 48.988, 37520]}, {"name": "Savigny-sur-Orge", "value": [2.349, 48.684, 37371]}, {"name": "Tremblay-en-France", "value": [2.555, 48.978, 37271]}, {"name": "Thonon-les-Bains", "value": [6.482, 46.37, 37027]}, {"name": "Saint-Benoît", "value": [55.649, -21.092, 37023]}, {"name": "La Ciotat", "value": [5.613, 43.193, 36987]}, {"name": "Échirolles", "value": [5.715, 45.147, 36849]}, {"name": "Châtillon", "value": [2.288, 48.803, 36777]}, {"name": "Athis-Mons", "value": [2.387, 48.709, 36222]}, {"name": "Six-Fours-les-Plages", "value": [5.829, 43.087, 36203]}, {"name": "Creil", "value": [2.485, 49.253, 36106]}, {"name": "Saint-Raphaël", "value": [6.847, 43.458, 35950]}, {"name": "Conflans-Sainte-Honorine", "value": [2.099, 49.0, 35926]}, {"name": "Villefranche-sur-Saône", "value": [4.732, 45.988, 35913]}, {"name": "Meyzieu", "value": [5.006, 45.777, 35882]}, {"name": "Sainte-Geneviève-des-Bois", "value": [2.33, 48.641, 35846]}, {"name": "Haguenau", "value": [7.83, 48.842, 35715]}, {"name": "Vitrolles", "value": [5.264, 43.45, 35532]}, {"name": "Villeneuve-Saint-Georges", "value": [2.449, 48.741, 35492]}, {"name": "La Possession", "value": [55.398, -20.994, 35245]}, {"name": "Saint-Chamond", "value": [4.502, 45.47, 35068]}, {"name": "Châtenay-Malabry", "value": [2.263, 48.768, 34898]}, {"name": "Palaiseau", "value": [2.229, 48.715, 34893]}, {"name": "Saint-Leu", "value": [55.333, -21.167, 34893]}, {"name": "Matoury", "value": [-52.344, 4.832, 34810]}, {"name": "Auxerre", "value": [3.582, 47.794, 34778]}, {"name": "Roanne", "value": [4.08, 46.045, 34762]}, {"name": "Mâcon", "value": [4.818, 46.321, 34448]}, {"name": "Sainte-Marie", "value": [55.53, -20.947, 34344]}, {"name": "Le Perreux-sur-Marne", "value": [2.504, 48.842, 34213]}, {"name": "Schiltigheim", "value": [7.744, 48.612, 34129]}, {"name": "Les Mureaux", "value": [1.914, 48.989, 33977]}, {"name": "Trappes", "value": [1.993, 48.775, 33717]}, {"name": "Nogent-sur-Marne", "value": [2.482, 48.837, 33472]}, {"name": "Houilles", "value": [2.188, 48.927, 33449]}, {"name": "Montluçon", "value": [2.604, 46.339, 33342]}, {"name": "Le Port", "value": [55.305, -20.945, 33336]}, {"name": "Romainville", "value": [2.438, 48.885, 33266]}, {"name": "Marignane", "value": [5.212, 43.417, 33003]}, {"name": "Romans-sur-Isère", "value": [5.038, 45.055, 32911]}, {"name": "Nevers", "value": [3.157, 46.988, 32830]}, {"name": "Lens", "value": [2.821, 50.437, 32618]}, {"name": "Saint-Médard-en-Jalles", "value": [-0.784, 44.883, 32538]}, {"name": "Agen", "value": [0.626, 44.203, 32485]}, {"name": "Pierrefitte-sur-Seine", "value": [2.363, 48.961, 32379]}, {"name": "Épinal", "value": [6.48, 48.163, 32285]}, {"name": "Koungou", "value": [45.187, -12.747, 32156]}, {"name": "Bezons", "value": [2.211, 48.926, 32017]}, {"name": "Aix-les-Bains", "value": [5.904, 45.698, 31874]}, {"name": "Montigny-le-Bretonneux", "value": [2.03, 48.78, 31777]}, {"name": "Herblay-sur-Seine", "value": [2.15, 49.001, 31605]}, {"name": "Cambrai", "value": [3.242, 50.17, 31425]}, {"name": "L'Haÿ-les-Roses", "value": [2.338, 48.776, 31392]}, {"name": "Plaisir", "value": [1.947, 48.813, 31375]}, {"name": "Pontoise", "value": [2.095, 49.051, 31327]}, {"name": "Châtellerault", "value": [0.553, 46.816, 31284]}, {"name": "Rillieux-la-Pape", "value": [4.898, 45.821, 31247]}, {"name": "Thiais", "value": [2.385, 48.761, 31097]}, {"name": "Vienne", "value": [4.881, 45.521, 31051]}, {"name": "Vigneux-sur-Seine", "value": [2.428, 48.704, 31050]}, {"name": "Viry-Châtillon", "value": [2.374, 48.67, 31045]}, {"name": "Saint-Laurent-du-Var", "value": [7.182, 43.686, 30941]}, {"name": "Le Chesnay-Rocquencourt", "value": [2.13, 48.827, 30924]}, {"name": "Baie-Mahault", "value": [-61.593, 16.251, 30909]}, {"name": "Dreux", "value": [1.359, 48.748, 30879]}, {"name": "Bègles", "value": [-0.548, 44.802, 30813]}, {"name": "Carpentras", "value": [5.061, 44.059, 30769]}, {"name": "Goussainville", "value": [2.466, 49.024, 30693]}, {"name": "Mont-de-Marsan", "value": [-0.491, 43.899, 30674]}, {"name": "Villiers-sur-Marne", "value": [2.545, 48.826, 30669]}, {"name": "Cachan", "value": [2.332, 48.792, 30592]}, {"name": "Savigny-le-Temple", "value": [2.574, 48.588, 30510]}, {"name": "Menton", "value": [7.494, 43.791, 30412]}, {"name": "Villemomble", "value": [2.509, 48.885, 30332]}, {"name": "Malakoff", "value": [2.297, 48.817, 30292]}, {"name": "Liévin", "value": [2.773, 50.424, 30149]}];
+
+        const chartDom = document.getElementById('map');
+        const myChart = echarts.init(chartDom, null, { renderer: 'canvas' });
+        const filterBtns = document.querySelectorAll('.filter-btn');
+
+        // Segment stats elements
+        const statsItaly30 = document.getElementById('statsItaly30');
+        const statsFrance30 = document.getElementById('statsFrance30');
+        const statsItaly100 = document.getElementById('statsItaly100');
+        const statsFrance100 = document.getElementById('statsFrance100');
+        const statsItaly500 = document.getElementById('statsItaly500');
+        const statsFrance500 = document.getElementById('statsFrance500');
+
+        // Calculate segment counts (static)
+        function getSegmentCounts(data) {
+            return {
+                seg30to100: data.filter(d => d.value[2] >= 30000 && d.value[2] < 100000).length,
+                seg100to500: data.filter(d => d.value[2] >= 100000 && d.value[2] < 500000).length,
+                seg500plus: data.filter(d => d.value[2] >= 500000).length
+            };
+        }
+
+        // Update static segment stats
+        function updateSegmentStats() {
+            const italySegments = getSegmentCounts(italyData);
+            const franceSegments = getSegmentCounts(franceData);
+
+            statsItaly30.textContent = `🇮🇹 ${italySegments.seg30to100}`;
+            statsFrance30.textContent = `🇫🇷 ${franceSegments.seg30to100}`;
+            statsItaly100.textContent = `🇮🇹 ${italySegments.seg100to500}`;
+            statsFrance100.textContent = `🇫🇷 ${franceSegments.seg100to500}`;
+            statsItaly500.textContent = `🇮🇹 ${italySegments.seg500plus}`;
+            statsFrance500.textContent = `🇫🇷 ${franceSegments.seg500plus}`;
+        }
+
+        // Initialize segment stats
+        updateSegmentStats();
+        
+        myChart.showLoading({ text: 'Caricamento mappe...' });
+
+        function getColorAndSize(pop) {
+            if (pop >= 500000) {
+                return { color: '#E91E63', size: 28 };
+            } else if (pop >= 100000) {
+                return { color: '#FF9800', size: 18 };
+            } else {
+                return { color: '#4CAF50', size: 10 };
+            }
+        }
+
+        function processData(data, minFilter, country) {
+            return data
+                .filter(d => d.value[2] >= minFilter)
+                .map(d => {
+                    const pop = d.value[2];
+                    const style = getColorAndSize(pop);
+                    return {
+                        name: d.name,
+                        value: d.value,
+                        country: country,
+                        symbolSize: style.size,
+                        itemStyle: { color: style.color }
+                    };
+                });
+        }
+
+        function formatNumber(num) {
+            return num.toLocaleString('it-IT');
+        }
+
+        function updateChart(minFilter) {
+            const filteredItaly = processData(italyData, minFilter, '🇮🇹');
+            const filteredFrance = processData(franceData, minFilter, '🇫🇷');
+            const allData = [...filteredItaly, ...filteredFrance];
+
+            myChart.setOption({
+                series: [{ data: allData }]
+            });
+        }
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                updateChart(parseInt(this.dataset.min));
+            });
+        });
+
+        // Load both GeoJSONs
+        Promise.all([
+            fetch('https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson').then(r => r.json()),
+            fetch('https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/regions-version-simplifiee.geojson').then(r => r.json())
+        ]).then(([italyGeo, franceGeo]) => {
+            myChart.hideLoading();
+            
+            // Merge GeoJSONs
+            const mergedGeo = {
+                type: 'FeatureCollection',
+                features: [...italyGeo.features, ...franceGeo.features]
+            };
+            
+            echarts.registerMap('Europe', mergedGeo);
+
+            const allData = [
+                ...processData(italyData, 30000, '🇮🇹'),
+                ...processData(franceData, 30000, '🇫🇷')
+            ];
+
+            const option = {
+                backgroundColor: '#ffffff',
+                animation: false,
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        if (params.data && params.data.value) {
+                            const pop = params.data.value[2];
+                            const flag = params.data.country || '';
+                            let categoria = '';
+                            if (pop >= 500000) categoria = '(Grande città)';
+                            else if (pop >= 100000) categoria = '(Media città)';
+                            else categoria = '(Piccola città)';
+                            return `${flag} <strong>${params.data.name}</strong> ${categoria}<br/>Popolazione: ${formatNumber(pop)}`;
+                        }
+                        return '';
+                    }
+                },
+                geo: {
+                    map: 'Europe',
+                    roam: true,
+                    scaleLimit: { min: 0.8, max: 10 },
+                    zoom: 1,
+                    center: [7, 46],
+                    silent: true,
+                    itemStyle: { 
+                        areaColor: '#f8f8f8', 
+                        borderColor: '#ddd', 
+                        borderWidth: 1 
+                    }
+                },
+                series: [{
+                    name: 'Comuni',
+                    type: 'scatter',
+                    coordinateSystem: 'geo',
+                    data: allData,
+                    symbolSize: function(val, params) {
+                        return params.data.symbolSize;
+                    },
+                    itemStyle: { opacity: 0.85 },
+                    emphasis: {
+                        itemStyle: { opacity: 1, borderColor: '#333', borderWidth: 2 }
+                    }
+                }]
+            };
+
+            myChart.setOption(option);
+            window.addEventListener('resize', () => myChart.resize());
+        }).catch(error => {
+            console.error(error);
+            chartDom.innerHTML = `<div style="text-align:center;padding:50px;color:red;">Errore: ${error.message}</div>`;
+        });
+    </script>
+</body>
+</html>
