@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comuni Italiani per Popolazione</title>
+    <title>Comuni Italia e Francia per Popolazione</title>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
@@ -16,7 +16,7 @@
         }
         .container {
             width: 100%;
-            max-width: 1600px;
+            max-width: 1400px;
             margin: 0 auto;
             background: white;
             border-radius: 12px;
@@ -92,14 +92,53 @@
             background: #f8f9fa;
             border-radius: 20px;
         }
-        .main-content {
+        .stats-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            background: #fafafa;
+            border-bottom: 1px solid #eee;
+        }
+        .segment-stats {
+            display: flex;
+            gap: 20px;
+        }
+        .segment-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .segment-label {
+            font-size: 0.7rem;
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .segment-label.green {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+        .segment-label.orange {
+            background: #FFF3E0;
+            color: #E65100;
+        }
+        .segment-label.pink {
+            background: #FCE4EC;
+            color: #C2185B;
+        }
+        .segment-count {
+            font-size: 0.7rem;
+            color: #666;
+        }
+        .map-container {
             display: flex;
             position: relative;
         }
-        #map { flex: 1; height: 700px; transition: all 0.3s ease; }
+        #map { flex: 1; height: 750px; transition: all 0.3s ease; }
         .table-panel {
-            width: 400px;
-            height: 700px;
+            width: 420px;
+            height: 750px;
             background: white;
             border-left: 1px solid #eee;
             display: flex;
@@ -112,7 +151,7 @@
             border-left: none;
         }
         .table-header {
-            padding: 14px 16px;
+            padding: 16px;
             border-bottom: 1px solid #eee;
             display: flex;
             justify-content: space-between;
@@ -120,25 +159,25 @@
             background: #fafafa;
         }
         .table-header h3 {
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             font-weight: 600;
             color: #1a1a2e;
             margin: 0;
         }
         .table-header span {
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             color: #888;
         }
         .table-toggle {
             position: absolute;
-            right: 400px;
+            right: 420px;
             top: 50%;
             transform: translateY(-50%);
             background: white;
             border: 1px solid #ddd;
             border-right: none;
             border-radius: 8px 0 0 8px;
-            padding: 12px 6px;
+            padding: 12px 8px;
             cursor: pointer;
             z-index: 100;
             transition: all 0.3s ease;
@@ -146,7 +185,7 @@
         }
         .table-toggle:hover { background: #f5f5f5; }
         .table-toggle.collapsed { right: 0; }
-        .table-toggle svg { width: 14px; height: 14px; color: #666; transition: transform 0.3s; }
+        .table-toggle svg { width: 16px; height: 16px; color: #666; transition: transform 0.3s; }
         .table-toggle.collapsed svg { transform: rotate(180deg); }
         .table-scroll {
             flex: 1;
@@ -156,7 +195,7 @@
         .comuni-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
         }
         .comuni-table thead {
             position: sticky;
@@ -165,23 +204,22 @@
             z-index: 10;
         }
         .comuni-table th {
-            padding: 8px 10px;
+            padding: 10px 12px;
             text-align: left;
             font-weight: 600;
             color: #666;
             border-bottom: 2px solid #eee;
-            font-size: 0.65rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             cursor: pointer;
             user-select: none;
-            white-space: nowrap;
         }
         .comuni-table th:hover { background: #f8f9fa; }
         .comuni-table th.sorted-asc::after { content: ' ↑'; color: #4CAF50; }
         .comuni-table th.sorted-desc::after { content: ' ↓'; color: #4CAF50; }
         .comuni-table td {
-            padding: 8px 10px;
+            padding: 10px 12px;
             border-bottom: 1px solid #f0f0f0;
             color: #333;
         }
@@ -193,17 +231,20 @@
             text-align: right;
             color: #2E7D32;
             font-weight: 500;
-            font-size: 0.7rem;
         }
         .comuni-table .rank-cell {
-            color: #bbb;
-            font-size: 0.65rem;
-            width: 28px;
+            color: #999;
+            font-size: 0.7rem;
+            width: 30px;
             text-align: center;
         }
-        .regione-cell {
+        .regione-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
             font-size: 0.65rem;
-            color: #888;
+            background: #f0f0f0;
+            color: #666;
         }
         .table-filter-btn {
             padding: 6px 12px;
@@ -259,7 +300,8 @@
         .legend-right {
             margin-left: auto;
             display: flex;
-            gap: 8px;
+            align-items: center;
+            gap: 12px;
         }
         .legend-container {
             padding: 16px 24px;
@@ -269,6 +311,13 @@
             align-items: center;
             gap: 24px;
             flex-wrap: wrap;
+        }
+        .logo-text {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #888;
+            margin-left: auto;
+            letter-spacing: 0.5px;
         }
         .legend-title {
             font-size: 0.75rem;
@@ -284,7 +333,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 700px;
+            height: 750px;
             font-size: 1rem;
             color: #888;
         }
@@ -298,19 +347,35 @@
     <div class="container">
         <div class="header">
             <div class="header-left">
-                <h1>Comuni Italiani per Popolazione</h1>
+                <h1>Comuni Italia e Francia</h1>
                 <p>Mappa interattiva dei comuni con più di 30.000 abitanti</p>
             </div>
-            <div class="controls">
-                <div class="filter-buttons">
-                    <button class="filter-btn green active" data-min="30000">&gt; 30K</button>
-                    <button class="filter-btn orange" data-min="100000">&gt; 100K</button>
-                    <button class="filter-btn pink" data-min="500000">&gt; 500K</button>
+        </div>
+        <div class="stats-bar">
+            <div class="filter-buttons">
+                <button class="filter-btn green active" data-min="30000">&gt; 30K</button>
+                <button class="filter-btn orange" data-min="100000">&gt; 100K</button>
+                <button class="filter-btn pink" data-min="500000">&gt; 500K</button>
+            </div>
+            <div class="segment-stats">
+                <div class="segment-row">
+                    <span class="segment-label green">30K-100K</span>
+                    <span class="segment-count" id="statsItaly30">🇮🇹 0</span>
+                    <span class="segment-count" id="statsFrance30">🇫🇷 0</span>
                 </div>
-                <span class="stats" id="statsDisplay">739 comuni</span>
+                <div class="segment-row">
+                    <span class="segment-label orange">100K-500K</span>
+                    <span class="segment-count" id="statsItaly100">🇮🇹 0</span>
+                    <span class="segment-count" id="statsFrance100">🇫🇷 0</span>
+                </div>
+                <div class="segment-row">
+                    <span class="segment-label pink">&gt; 500K</span>
+                    <span class="segment-count" id="statsItaly500">🇮🇹 0</span>
+                    <span class="segment-count" id="statsFrance500">🇫🇷 0</span>
+                </div>
             </div>
         </div>
-        <div class="main-content">
+        <div class="map-container">
             <div id="map"><div class="loading">Caricamento mappa...</div></div>
             <button class="table-toggle" id="tableToggle" title="Toggle tabella">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -320,7 +385,7 @@
             <div class="table-panel" id="tablePanel">
                 <div class="table-header">
                     <div>
-                        <h3>Comuni &lt; 128K</h3>
+                        <h3>🇮🇹 Comuni &lt; 128K</h3>
                         <span id="tableCount">128 comuni</span>
                     </div>
                     <button class="table-filter-btn" id="showTableOnly" title="Mostra solo questi comuni sulla mappa">
@@ -359,23 +424,24 @@
                 </div>
             </div>
             <div class="legend-right">
-                <button class="download-btn all" id="downloadAll" title="Scarica tutti i comuni">
+                <button class="download-btn all" id="downloadAll" title="Scarica tutti i comuni italiani">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                     </svg>
-                    Tutti i dati
+                    🇮🇹 Tutti
                 </button>
-                <button class="download-btn filtered" id="download128" title="Scarica i 128 comuni della tabella">
+                <button class="download-btn filtered" id="download128" title="Scarica i 128 comuni italiani della tabella">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                     </svg>
-                    128 Comuni
+                    🇮🇹 128 Comuni
                 </button>
+                <span class="logo-text">Lombardini22</span>
             </div>
         </div>
     </div>
     <script>
-const comuniData = 
+const italyData = 
 [
   {
     "name": "Roma",
@@ -6290,13 +6356,47 @@ const comuniData =
     ]
   }
 ];
+const franceData = 
+[{"name": "Paris", "value": [2.352, 48.857, 2133111]}, {"name": "Marseille", "value": [5.37, 43.296, 873076]}, {"name": "Lyon", "value": [4.836, 45.764, 522250]}, {"name": "Toulouse", "value": [1.432, 43.596, 504078]}, {"name": "Nice", "value": [7.238, 43.712, 348085]}, {"name": "Nantes", "value": [-1.548, 47.232, 323204]}, {"name": "Montpellier", "value": [3.868, 43.613, 302454]}, {"name": "Strasbourg", "value": [7.768, 48.571, 291313]}, {"name": "Bordeaux", "value": [-0.574, 44.857, 261804]}, {"name": "Lille", "value": [3.048, 50.632, 236710]}, {"name": "Rennes", "value": [-1.682, 48.112, 225081]}, {"name": "Toulon", "value": [5.932, 43.136, 180452]}, {"name": "Reims", "value": [4.04, 49.252, 179380]}, {"name": "Saint-Étienne", "value": [4.379, 45.43, 172718]}, {"name": "Le Havre", "value": [0.14, 49.498, 166058]}, {"name": "Dijon", "value": [5.038, 47.323, 159346]}, {"name": "Grenoble", "value": [5.721, 45.182, 157477]}, {"name": "Angers", "value": [-0.556, 47.477, 157175]}, {"name": "Villeurbanne", "value": [4.888, 45.771, 156928]}, {"name": "Saint-Denis", "value": [55.447, -20.933, 154765]}, {"name": "Nîmes", "value": [4.348, 43.845, 148104]}, {"name": "Aix-en-Provence", "value": [5.399, 43.536, 147478]}, {"name": "Clermont-Ferrand", "value": [3.116, 45.786, 147327]}, {"name": "Le Mans", "value": [0.2, 47.988, 145004]}, {"name": "Brest", "value": [-4.503, 48.4, 139619]}, {"name": "Tours", "value": [0.696, 47.399, 137658]}, {"name": "Amiens", "value": [2.29, 49.901, 133625]}, {"name": "Annecy", "value": [6.126, 45.891, 131715]}, {"name": "Limoges", "value": [1.249, 45.854, 129760]}, {"name": "Metz", "value": [6.196, 49.108, 120874]}, {"name": "Boulogne-Billancourt", "value": [2.239, 48.837, 119808]}, {"name": "Perpignan", "value": [2.899, 42.697, 119656]}, {"name": "Besançon", "value": [6.02, 47.255, 119198]}, {"name": "Orléans", "value": [1.916, 47.883, 116617]}, {"name": "Rouen", "value": [1.093, 49.441, 114083]}, {"name": "Saint-Denis", "value": [2.359, 48.93, 113942]}, {"name": "Montreuil", "value": [2.448, 48.863, 111455]}, {"name": "Caen", "value": [-0.37, 49.185, 108200]}, {"name": "Argenteuil", "value": [2.241, 48.951, 107221]}, {"name": "Mulhouse", "value": [7.326, 47.749, 106341]}, {"name": "Saint-Paul", "value": [55.322, -21.044, 105240]}, {"name": "Nancy", "value": [6.176, 48.69, 104260]}, {"name": "Tourcoing", "value": [3.159, 50.725, 99011]}, {"name": "Roubaix", "value": [3.183, 50.688, 98892]}, {"name": "Nanterre", "value": [2.207, 48.896, 97351]}, {"name": "Vitry-sur-Seine", "value": [2.394, 48.788, 96205]}, {"name": "Créteil", "value": [2.455, 48.784, 92989]}, {"name": "Avignon", "value": [4.841, 43.935, 90330]}, {"name": "Poitiers", "value": [0.36, 46.584, 90240]}, {"name": "Aubervilliers", "value": [2.384, 48.912, 90071]}, {"name": "Asnières-sur-Seine", "value": [2.288, 48.915, 89662]}, {"name": "Colombes", "value": [2.247, 48.922, 88870]}, {"name": "Dunkerque", "value": [2.338, 51.031, 86788]}, {"name": "Aulnay-sous-Bois", "value": [2.493, 48.946, 86135]}, {"name": "Saint-Pierre", "value": [55.494, -21.312, 84077]}, {"name": "Versailles", "value": [2.118, 48.803, 83587]}, {"name": "Le Tampon", "value": [55.558, -21.223, 81943]}, {"name": "Courbevoie", "value": [2.256, 48.898, 81516]}, {"name": "Béziers", "value": [3.231, 43.348, 80341]}, {"name": "La Rochelle", "value": [-1.175, 46.162, 78535]}, {"name": "Rueil-Malmaison", "value": [2.177, 48.869, 78186]}, {"name": "Cherbourg-en-Cotentin", "value": [-1.634, 49.633, 77808]}, {"name": "Champigny-sur-Marne", "value": [2.517, 48.817, 77724]}, {"name": "Pau", "value": [-0.35, 43.32, 77066]}, {"name": "Mérignac", "value": [-0.682, 44.832, 75729]}, {"name": "Saint-Maur-des-Fossés", "value": [2.494, 48.799, 75441]}, {"name": "Antibes", "value": [7.106, 43.588, 75130]}, {"name": "Fort-de-France", "value": [-61.069, 14.641, 74921]}, {"name": "Ajaccio", "value": [8.701, 41.935, 73822]}, {"name": "Cannes", "value": [7.004, 43.553, 73255]}, {"name": "Saint-Nazaire", "value": [-2.254, 47.28, 72057]}, {"name": "Mamoudzou", "value": [45.193, -12.79, 71437]}, {"name": "Drancy", "value": [2.445, 48.923, 71363]}, {"name": "Noisy-le-Grand", "value": [2.564, 48.836, 70374]}, {"name": "Issy-les-Moulineaux", "value": [2.264, 48.824, 68580]}, {"name": "Cergy", "value": [2.051, 49.04, 68348]}, {"name": "Levallois-Perret", "value": [2.287, 48.895, 68009]}, {"name": "Colmar", "value": [7.385, 48.11, 67730]}, {"name": "Calais", "value": [1.876, 50.95, 67380]}, {"name": "Pessac", "value": [-0.676, 44.792, 66760]}, {"name": "Vénissieux", "value": [4.881, 45.704, 66363]}, {"name": "Évry-Courcouronnes", "value": [2.44, 48.63, 66177]}, {"name": "Clichy", "value": [2.306, 48.904, 64849]}, {"name": "Valence", "value": [4.914, 44.923, 64483]}, {"name": "Ivry-sur-Seine", "value": [2.388, 48.813, 64001]}, {"name": "Bourges", "value": [2.404, 47.075, 63702]}, {"name": "Quimper", "value": [-4.091, 47.997, 63642]}, {"name": "Cayenne", "value": [-52.501, 5.022, 63468]}, {"name": "Antony", "value": [2.299, 48.75, 63232]}, {"name": "Troyes", "value": [4.078, 48.297, 62782]}, {"name": "La Seyne-sur-Mer", "value": [5.871, 43.088, 62763]}, {"name": "Villeneuve-d'Ascq", "value": [3.154, 50.632, 62067]}, {"name": "Montauban", "value": [1.364, 44.022, 61919]}, {"name": "Pantin", "value": [2.409, 48.898, 60800]}, {"name": "Chambéry", "value": [5.909, 45.583, 59856]}, {"name": "Niort", "value": [-0.465, 46.328, 59309]}, {"name": "Neuilly-sur-Seine", "value": [2.266, 48.885, 59267]}, {"name": "Sarcelles", "value": [2.382, 48.99, 58424]}, {"name": "Le Blanc-Mesnil", "value": [2.461, 48.94, 58257]}, {"name": "Maisons-Alfort", "value": [2.438, 48.806, 58068]}, {"name": "Lorient", "value": [-3.378, 47.75, 57846]}, {"name": "Villejuif", "value": [2.36, 48.793, 57753]}, {"name": "Saint-André", "value": [55.643, -20.963, 57150]}, {"name": "Fréjus", "value": [6.764, 43.472, 57082]}, {"name": "Beauvais", "value": [2.086, 49.437, 56677]}, {"name": "Narbonne", "value": [3.02, 43.165, 56395]}, {"name": "Meaux", "value": [2.9, 48.957, 55616]}, {"name": "Hyères", "value": [6.189, 43.102, 55103]}, {"name": "Bobigny", "value": [2.439, 48.908, 55056]}, {"name": "La Roche-sur-Yon", "value": [-1.408, 46.668, 54952]}, {"name": "Clamart", "value": [2.255, 48.796, 54491]}, {"name": "Vannes", "value": [-2.757, 47.66, 54420]}, {"name": "Chelles", "value": [2.597, 48.884, 54309]}, {"name": "Cholet", "value": [-0.878, 47.045, 53936]}, {"name": "Saint-Louis", "value": [55.421, -21.234, 53935]}, {"name": "Épinay-sur-Seine", "value": [2.314, 48.955, 53489]}, {"name": "Saint-Ouen-sur-Seine", "value": [2.333, 48.91, 53207]}, {"name": "Saint-Quentin", "value": [3.278, 49.847, 52958]}, {"name": "Bondy", "value": [2.484, 48.902, 52905]}, {"name": "Bayonne", "value": [-1.466, 43.492, 52749]}, {"name": "Corbeil-Essonnes", "value": [2.469, 48.604, 52683]}, {"name": "Cagnes-sur-Mer", "value": [7.153, 43.672, 52580]}, {"name": "Vaulx-en-Velin", "value": [4.926, 45.786, 52139]}, {"name": "Les Abymes", "value": [-61.502, 16.273, 52118]}, {"name": "Sevran", "value": [2.531, 48.939, 51845]}, {"name": "Fontenay-sous-Bois", "value": [2.474, 48.851, 51812]}, {"name": "Sartrouville", "value": [2.175, 48.94, 51220]}, {"name": "Massy", "value": [2.275, 48.728, 50962]}, {"name": "Arles", "value": [4.662, 43.547, 50415]}, {"name": "Saint-Laurent-du-Maroni", "value": [-53.983, 4.965, 50250]}, {"name": "Albi", "value": [2.147, 43.926, 49714]}, {"name": "Laval", "value": [-0.766, 48.061, 49657]}, {"name": "Saint-Herblain", "value": [-1.634, 47.224, 49537]}, {"name": "Gennevilliers", "value": [2.294, 48.934, 49410]}, {"name": "Suresnes", "value": [2.22, 48.87, 49104]}, {"name": "Saint-Priest", "value": [4.949, 45.702, 48822]}, {"name": "Vincennes", "value": [2.438, 48.847, 48798]}, {"name": "Bastia", "value": [9.425, 42.686, 48768]}, {"name": "Martigues", "value": [5.05, 43.38, 48568]}, {"name": "Les Sables-d'Olonne", "value": [-1.793, 46.501, 48402]}, {"name": "Grasse", "value": [6.932, 43.656, 48323]}, {"name": "Montrouge", "value": [2.316, 48.815, 47657]}, {"name": "Aubagne", "value": [5.563, 43.294, 47342]}, {"name": "Saint-Malo", "value": [-1.981, 48.64, 47323]}, {"name": "Évreux", "value": [1.142, 49.02, 47289]}, {"name": "La Courneuve", "value": [2.4, 48.932, 47160]}, {"name": "Blois", "value": [1.306, 47.582, 46813]}, {"name": "Brive-la-Gaillarde", "value": [1.519, 45.144, 46599]}, {"name": "Charleville-Mézières", "value": [4.717, 49.775, 46398]}, {"name": "Meudon", "value": [2.227, 48.804, 46342]}, {"name": "Carcassonne", "value": [2.344, 43.209, 46218]}, {"name": "Choisy-le-Roi", "value": [2.417, 48.764, 46129]}, {"name": "Noisy-le-Sec", "value": [2.459, 48.891, 46094]}, {"name": "Livry-Gargan", "value": [2.535, 48.92, 46028]}, {"name": "Rosny-sous-Bois", "value": [2.486, 48.875, 45655]}, {"name": "Talence", "value": [-0.591, 44.806, 45225]}, {"name": "Belfort", "value": [6.845, 47.647, 45155]}, {"name": "Alfortville", "value": [2.421, 48.796, 45046]}, {"name": "Chalon-sur-Saône", "value": [4.852, 46.79, 45031]}, {"name": "Salon-de-Provence", "value": [5.068, 43.646, 44731]}, {"name": "Sète", "value": [3.647, 43.392, 44712]}, {"name": "Istres", "value": [4.951, 43.55, 44577]}, {"name": "Mantes-la-Jolie", "value": [1.693, 48.998, 44539]}, {"name": "Saint-Germain-en-Laye", "value": [2.099, 48.941, 44380]}, {"name": "Saint-Brieuc", "value": [-2.762, 48.515, 44224]}, {"name": "Tarbes", "value": [0.066, 43.235, 43955]}, {"name": "Alès", "value": [4.088, 44.125, 43892]}, {"name": "Châlons-en-Champagne", "value": [4.379, 48.964, 43877]}, {"name": "Bagneux", "value": [2.31, 48.798, 43699]}, {"name": "Puteaux", "value": [2.238, 48.884, 43672]}, {"name": "Caluire-et-Cuire", "value": [4.851, 45.797, 43572]}, {"name": "Bron", "value": [4.912, 45.734, 43049]}, {"name": "Rezé", "value": [-1.55, 47.176, 42998]}, {"name": "Valenciennes", "value": [3.516, 50.359, 42991]}, {"name": "Châteauroux", "value": [1.694, 46.803, 42968]}, {"name": "Garges-lès-Gonesse", "value": [2.405, 48.97, 42841]}, {"name": "Castres", "value": [2.238, 43.616, 42672]}, {"name": "Arras", "value": [2.766, 50.29, 42600]}, {"name": "Melun", "value": [2.658, 48.544, 42367]}, {"name": "Thionville", "value": [6.129, 49.376, 42163]}, {"name": "Le Cannet", "value": [7.006, 43.573, 41597]}, {"name": "Bourg-en-Bresse", "value": [5.246, 46.205, 41525]}, {"name": "Anglet", "value": [-1.516, 43.492, 41153]}, {"name": "Angoulême", "value": [0.145, 45.647, 41086]}, {"name": "Boulogne-sur-Mer", "value": [1.608, 50.727, 40910]}, {"name": "Wattrelos", "value": [3.216, 50.706, 40836]}, {"name": "Gap", "value": [6.065, 44.58, 40500]}, {"name": "Villenave-d'Ornon", "value": [-0.558, 44.773, 40500]}, {"name": "Montélimar", "value": [4.749, 44.554, 40399]}, {"name": "Compiègne", "value": [2.853, 49.399, 40394]}, {"name": "Stains", "value": [2.385, 48.957, 40359]}, {"name": "Gagny", "value": [2.545, 48.882, 40189]}, {"name": "Colomiers", "value": [1.327, 43.612, 40159]}, {"name": "Poissy", "value": [2.027, 48.924, 40016]}, {"name": "Draguignan", "value": [6.454, 43.536, 39745]}, {"name": "Douai", "value": [3.092, 50.382, 39648]}, {"name": "Le Lamentin", "value": [-60.993, 14.625, 39641]}, {"name": "Bagnolet", "value": [2.423, 48.869, 39366]}, {"name": "Marcq-en-Barœul", "value": [3.101, 50.675, 39356]}, {"name": "Saint-Joseph", "value": [55.642, -21.306, 38807]}, {"name": "Villepinte", "value": [2.536, 48.959, 38725]}, {"name": "Saint-Martin-d'Hères", "value": [5.765, 45.176, 38454]}, {"name": "Chartres", "value": [1.506, 48.447, 38447]}, {"name": "Pontault-Combault", "value": [2.614, 48.787, 38258]}, {"name": "Joué-lès-Tours", "value": [0.654, 47.334, 38183]}, {"name": "Annemasse", "value": [6.242, 46.191, 37918]}, {"name": "Neuilly-sur-Marne", "value": [2.54, 48.862, 37531]}, {"name": "Franconville", "value": [2.224, 48.988, 37520]}, {"name": "Savigny-sur-Orge", "value": [2.349, 48.684, 37371]}, {"name": "Tremblay-en-France", "value": [2.555, 48.978, 37271]}, {"name": "Thonon-les-Bains", "value": [6.482, 46.37, 37027]}, {"name": "Saint-Benoît", "value": [55.649, -21.092, 37023]}, {"name": "La Ciotat", "value": [5.613, 43.193, 36987]}, {"name": "Échirolles", "value": [5.715, 45.147, 36849]}, {"name": "Châtillon", "value": [2.288, 48.803, 36777]}, {"name": "Athis-Mons", "value": [2.387, 48.709, 36222]}, {"name": "Six-Fours-les-Plages", "value": [5.829, 43.087, 36203]}, {"name": "Creil", "value": [2.485, 49.253, 36106]}, {"name": "Saint-Raphaël", "value": [6.847, 43.458, 35950]}, {"name": "Conflans-Sainte-Honorine", "value": [2.099, 49.0, 35926]}, {"name": "Villefranche-sur-Saône", "value": [4.732, 45.988, 35913]}, {"name": "Meyzieu", "value": [5.006, 45.777, 35882]}, {"name": "Sainte-Geneviève-des-Bois", "value": [2.33, 48.641, 35846]}, {"name": "Haguenau", "value": [7.83, 48.842, 35715]}, {"name": "Vitrolles", "value": [5.264, 43.45, 35532]}, {"name": "Villeneuve-Saint-Georges", "value": [2.449, 48.741, 35492]}, {"name": "La Possession", "value": [55.398, -20.994, 35245]}, {"name": "Saint-Chamond", "value": [4.502, 45.47, 35068]}, {"name": "Châtenay-Malabry", "value": [2.263, 48.768, 34898]}, {"name": "Palaiseau", "value": [2.229, 48.715, 34893]}, {"name": "Saint-Leu", "value": [55.333, -21.167, 34893]}, {"name": "Matoury", "value": [-52.344, 4.832, 34810]}, {"name": "Auxerre", "value": [3.582, 47.794, 34778]}, {"name": "Roanne", "value": [4.08, 46.045, 34762]}, {"name": "Mâcon", "value": [4.818, 46.321, 34448]}, {"name": "Sainte-Marie", "value": [55.53, -20.947, 34344]}, {"name": "Le Perreux-sur-Marne", "value": [2.504, 48.842, 34213]}, {"name": "Schiltigheim", "value": [7.744, 48.612, 34129]}, {"name": "Les Mureaux", "value": [1.914, 48.989, 33977]}, {"name": "Trappes", "value": [1.993, 48.775, 33717]}, {"name": "Nogent-sur-Marne", "value": [2.482, 48.837, 33472]}, {"name": "Houilles", "value": [2.188, 48.927, 33449]}, {"name": "Montluçon", "value": [2.604, 46.339, 33342]}, {"name": "Le Port", "value": [55.305, -20.945, 33336]}, {"name": "Romainville", "value": [2.438, 48.885, 33266]}, {"name": "Marignane", "value": [5.212, 43.417, 33003]}, {"name": "Romans-sur-Isère", "value": [5.038, 45.055, 32911]}, {"name": "Nevers", "value": [3.157, 46.988, 32830]}, {"name": "Lens", "value": [2.821, 50.437, 32618]}, {"name": "Saint-Médard-en-Jalles", "value": [-0.784, 44.883, 32538]}, {"name": "Agen", "value": [0.626, 44.203, 32485]}, {"name": "Pierrefitte-sur-Seine", "value": [2.363, 48.961, 32379]}, {"name": "Épinal", "value": [6.48, 48.163, 32285]}, {"name": "Koungou", "value": [45.187, -12.747, 32156]}, {"name": "Bezons", "value": [2.211, 48.926, 32017]}, {"name": "Aix-les-Bains", "value": [5.904, 45.698, 31874]}, {"name": "Montigny-le-Bretonneux", "value": [2.03, 48.78, 31777]}, {"name": "Herblay-sur-Seine", "value": [2.15, 49.001, 31605]}, {"name": "Cambrai", "value": [3.242, 50.17, 31425]}, {"name": "L'Haÿ-les-Roses", "value": [2.338, 48.776, 31392]}, {"name": "Plaisir", "value": [1.947, 48.813, 31375]}, {"name": "Pontoise", "value": [2.095, 49.051, 31327]}, {"name": "Châtellerault", "value": [0.553, 46.816, 31284]}, {"name": "Rillieux-la-Pape", "value": [4.898, 45.821, 31247]}, {"name": "Thiais", "value": [2.385, 48.761, 31097]}, {"name": "Vienne", "value": [4.881, 45.521, 31051]}, {"name": "Vigneux-sur-Seine", "value": [2.428, 48.704, 31050]}, {"name": "Viry-Châtillon", "value": [2.374, 48.67, 31045]}, {"name": "Saint-Laurent-du-Var", "value": [7.182, 43.686, 30941]}, {"name": "Le Chesnay-Rocquencourt", "value": [2.13, 48.827, 30924]}, {"name": "Baie-Mahault", "value": [-61.593, 16.251, 30909]}, {"name": "Dreux", "value": [1.359, 48.748, 30879]}, {"name": "Bègles", "value": [-0.548, 44.802, 30813]}, {"name": "Carpentras", "value": [5.061, 44.059, 30769]}, {"name": "Goussainville", "value": [2.466, 49.024, 30693]}, {"name": "Mont-de-Marsan", "value": [-0.491, 43.899, 30674]}, {"name": "Villiers-sur-Marne", "value": [2.545, 48.826, 30669]}, {"name": "Cachan", "value": [2.332, 48.792, 30592]}, {"name": "Savigny-le-Temple", "value": [2.574, 48.588, 30510]}, {"name": "Menton", "value": [7.494, 43.791, 30412]}, {"name": "Villemomble", "value": [2.509, 48.885, 30332]}, {"name": "Malakoff", "value": [2.297, 48.817, 30292]}, {"name": "Liévin", "value": [2.773, 50.424, 30149]}];
 
         const chartDom = document.getElementById('map');
         const myChart = echarts.init(chartDom, null, { renderer: 'canvas' });
-        const statsDisplay = document.getElementById('statsDisplay');
         const filterBtns = document.querySelectorAll('.filter-btn');
+
+        // Segment stats elements
+        const statsItaly30 = document.getElementById('statsItaly30');
+        const statsFrance30 = document.getElementById('statsFrance30');
+        const statsItaly100 = document.getElementById('statsItaly100');
+        const statsFrance100 = document.getElementById('statsFrance100');
+        const statsItaly500 = document.getElementById('statsItaly500');
+        const statsFrance500 = document.getElementById('statsFrance500');
+
+        // Calculate segment counts (static)
+        function getSegmentCounts(data) {
+            return {
+                seg30to100: data.filter(d => d.value[2] >= 30000 && d.value[2] < 100000).length,
+                seg100to500: data.filter(d => d.value[2] >= 100000 && d.value[2] < 500000).length,
+                seg500plus: data.filter(d => d.value[2] >= 500000).length
+            };
+        }
+
+        // Update static segment stats
+        function updateSegmentStats() {
+            const italySegments = getSegmentCounts(italyData);
+            const franceSegments = getSegmentCounts(franceData);
+
+            statsItaly30.textContent = `🇮🇹 ${italySegments.seg30to100}`;
+            statsFrance30.textContent = `🇫🇷 ${franceSegments.seg30to100}`;
+            statsItaly100.textContent = `🇮🇹 ${italySegments.seg100to500}`;
+            statsFrance100.textContent = `🇫🇷 ${franceSegments.seg100to500}`;
+            statsItaly500.textContent = `🇮🇹 ${italySegments.seg500plus}`;
+            statsFrance500.textContent = `🇫🇷 ${franceSegments.seg500plus}`;
+        }
+
+        // Initialize segment stats
+        updateSegmentStats();
         
-        myChart.showLoading({ text: 'Caricamento...' });
+        myChart.showLoading({ text: 'Caricamento mappe...' });
 
         function getColorAndSize(pop) {
             if (pop >= 500000) {
@@ -6308,8 +6408,8 @@ const comuniData =
             }
         }
 
-        function processData(minFilter) {
-            return comuniData
+        function processData(data, minFilter, country) {
+            return data
                 .filter(d => d.value[2] >= minFilter)
                 .map(d => {
                     const pop = d.value[2];
@@ -6317,6 +6417,7 @@ const comuniData =
                     return {
                         name: d.name,
                         value: d.value,
+                        country: country,
                         symbolSize: style.size,
                         itemStyle: { color: style.color }
                     };
@@ -6328,10 +6429,12 @@ const comuniData =
         }
 
         function updateChart(minFilter) {
-            const filtered = processData(minFilter);
-            statsDisplay.textContent = `${filtered.length} comuni`;
+            const filteredItaly = processData(italyData, minFilter, '🇮🇹');
+            const filteredFrance = processData(franceData, minFilter, '🇫🇷');
+            const allData = [...filteredItaly, ...filteredFrance];
+
             myChart.setOption({
-                series: [{ data: filtered }]
+                series: [{ data: allData }]
             });
         }
 
@@ -6343,138 +6446,165 @@ const comuniData =
             });
         });
 
-        fetch('https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson')
-            .then(res => res.json())
-            .then(geoJson => {
-                myChart.hideLoading();
-                echarts.registerMap('Italy', geoJson);
+        // Load both GeoJSONs
+        Promise.all([
+            fetch('https://raw.githubusercontent.com/openpolis/geojson-italy/master/geojson/limits_IT_regions.geojson').then(r => r.json()),
+            fetch('https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/regions-version-simplifiee.geojson').then(r => r.json())
+        ]).then(([italyGeo, franceGeo]) => {
+            myChart.hideLoading();
+            
+            // Merge GeoJSONs
+            const mergedGeo = {
+                type: 'FeatureCollection',
+                features: [...italyGeo.features, ...franceGeo.features]
+            };
+            
+            echarts.registerMap('Europe', mergedGeo);
 
-                const option = {
-                    backgroundColor: '#ffffff',
-                    animation: false,
-                    tooltip: {
-                        trigger: 'item',
-                        formatter: function(params) {
-                            if (params.data && params.data.value) {
-                                const pop = params.data.value[2];
-                                let categoria = '';
-                                if (pop >= 500000) categoria = '(Grande città)';
-                                else if (pop >= 100000) categoria = '(Media città)';
-                                else categoria = '(Piccola città)';
-                                return `<strong>${params.data.name}</strong> ${categoria}<br/>Popolazione: ${formatNumber(pop)}`;
-                            }
-                            return '';
+            const allData = [
+                ...processData(italyData, 30000, '🇮🇹'),
+                ...processData(franceData, 30000, '🇫🇷')
+            ];
+
+            const option = {
+                backgroundColor: '#ffffff',
+                animation: false,
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        if (params.data && params.data.value) {
+                            const pop = params.data.value[2];
+                            const flag = params.data.country || '';
+                            let categoria = '';
+                            if (pop >= 500000) categoria = '(Grande città)';
+                            else if (pop >= 100000) categoria = '(Media città)';
+                            else categoria = '(Piccola città)';
+                            return `${flag} <strong>${params.data.name}</strong> ${categoria}<br/>Popolazione: ${formatNumber(pop)}`;
                         }
+                        return '';
+                    }
+                },
+                geo: {
+                    map: 'Europe',
+                    roam: true,
+                    scaleLimit: { min: 0.8, max: 10 },
+                    zoom: 1,
+                    center: [7, 46],
+                    silent: true,
+                    itemStyle: { 
+                        areaColor: '#f8f8f8', 
+                        borderColor: '#ddd', 
+                        borderWidth: 1 
+                    }
+                },
+                series: [{
+                    name: 'Comuni',
+                    type: 'scatter',
+                    coordinateSystem: 'geo',
+                    data: allData,
+                    symbolSize: function(val, params) {
+                        return params.data.symbolSize;
                     },
-                    geo: {
-                        map: 'Italy',
-                        roam: true,
-                        scaleLimit: { min: 1, max: 10 },
-                        zoom: 1.2,
-                        center: [12.5, 42.5],
-                        silent: true,
-                        itemStyle: { 
-                            areaColor: '#f8f8f8', 
-                            borderColor: '#ddd', 
-                            borderWidth: 1 
-                        }
-                    },
-                    series: [{
-                        name: 'Comuni',
-                        type: 'scatter',
-                        coordinateSystem: 'geo',
-                        data: processData(30000),
-                        symbolSize: function(val, params) {
-                            return params.data.symbolSize;
-                        },
-                        itemStyle: { opacity: 0.85 },
-                        emphasis: {
-                            itemStyle: { opacity: 1, borderColor: '#333', borderWidth: 2 }
-                        }
-                    }]
-                };
+                    itemStyle: { opacity: 0.85 },
+                    emphasis: {
+                        itemStyle: { opacity: 1, borderColor: '#333', borderWidth: 2 }
+                    }
+                }]
+            };
 
-                myChart.setOption(option);
-                window.addEventListener('resize', () => myChart.resize());
+            myChart.setOption(option);
+            window.addEventListener('resize', () => myChart.resize());
 
-                // Initialize table after chart is ready
-                initComuniTable();
-            })
-            .catch(error => {
-                console.error(error);
-                chartDom.innerHTML = `<div style="text-align:center;padding:50px;color:red;">Errore: ${error.message}</div>`;
-            });
+            // Initialize table after chart is ready
+            initComuniTable();
+        }).catch(error => {
+            console.error(error);
+            chartDom.innerHTML = `<div style="text-align:center;padding:50px;color:red;">Errore: ${error.message}</div>`;
+        });
 
-        // Region mapping for Italian comuni
-        const regionMap = {
-            "Potenza": "Basilicata", "Cosenza": "Calabria", "Vigevano": "Lombardia",
-            "Castellammare di Stabia": "Campania", "Olbia": "Sardegna", "Afragola": "Campania",
-            "Viareggio": "Toscana", "Legnano": "Lombardia", "Fano": "Marche", "Anzio": "Lazio",
-            "Carrara": "Toscana", "Matera": "Basilicata", "Faenza": "Emilia-Romagna",
-            "Savona": "Liguria", "Acerra": "Campania", "Crotone": "Calabria",
-            "Caltanissetta": "Sicilia", "Marano di Napoli": "Campania", "Molfetta": "Puglia",
-            "Cerignola": "Puglia", "Cuneo": "Piemonte", "Benevento": "Campania",
-            "Moncalieri": "Piemonte", "Foligno": "Umbria", "Agrigento": "Sicilia",
-            "Tivoli": "Lazio", "Trapani": "Sicilia", "Trani": "Puglia",
-            "Montesilvano": "Abruzzo", "Modica": "Sicilia", "Bisceglie": "Puglia",
-            "Manfredonia": "Puglia", "Sanremo": "Liguria", "Siena": "Toscana",
-            "Bitonto": "Puglia", "Bagheria": "Sicilia", "Gallarate": "Lombardia",
-            "Velletri": "Lazio", "Pordenone": "Friuli-Venezia Giulia", "Avellino": "Campania",
-            "Civitavecchia": "Lazio", "Teramo": "Abruzzo", "Portici": "Campania",
-            "Rho": "Lombardia", "Ardea": "Lazio", "Acireale": "Sicilia", "Rovigo": "Veneto",
-            "Mazara del Vallo": "Sicilia", "Cava de' Tirreni": "Campania", "Mantova": "Lombardia",
-            "Battipaglia": "Campania", "Empoli": "Toscana", "Ercolano": "Campania",
-            "Scandicci": "Toscana", "Aversa": "Campania", "Sesto Fiorentino": "Toscana",
-            "San Severo": "Puglia", "Misterbianco": "Sicilia", "Chieti": "Abruzzo",
-            "Nettuno": "Lazio", "Collegno": "Piemonte", "Monopoli": "Puglia",
-            "Scafati": "Campania", "Campi Bisenzio": "Toscana", "Paderno Dugnano": "Lombardia",
-            "Campobasso": "Molise", "Lecco": "Lombardia", "Chioggia": "Veneto",
-            "Cologno Monzese": "Lombardia", "San Benedetto del Tronto": "Marche",
-            "Corato": "Puglia", "Lissone": "Lombardia", "Martina Franca": "Puglia",
-            "Capannori": "Toscana", "Casalnuovo di Napoli": "Campania", "Marino": "Lazio",
-            "Rivoli": "Piemonte", "Vercelli": "Piemonte", "Nichelino": "Piemonte",
-            "Settimo Torinese": "Piemonte", "Lodi": "Lombardia", "Ascoli Piceno": "Marche",
-            "Rieti": "Lazio", "Seregno": "Lombardia", "Cascina": "Toscana",
-            "Terracina": "Lazio", "Paternò": "Sicilia", "Alcamo": "Sicilia",
-            "Senigallia": "Marche", "Nocera Inferiore": "Campania", "Biella": "Piemonte",
-            "Frosinone": "Lazio", "Imperia": "Liguria", "Bassano del Grappa": "Veneto",
-            "Gravina in Puglia": "Puglia", "Alghero": "Sardegna", "San Donà di Piave": "Veneto",
-            "Civitanova Marche": "Marche", "San Giorgio a Cremano": "Campania",
-            "Desio": "Lombardia", "Rozzano": "Lombardia", "Merano/Meran": "Trentino-Alto Adige",
-            "Quarto": "Campania", "Sassuolo": "Emilia-Romagna", "Monterotondo": "Lazio",
-            "Avezzano": "Abruzzo", "Vasto": "Abruzzo", "Ladispoli": "Lazio",
-            "Carini": "Sicilia", "Macerata": "Marche", "Rovereto": "Trentino-Alto Adige",
-            "Cantù": "Lombardia", "San Giuliano Milanese": "Lombardia", "Fondi": "Lazio",
-            "Cesano Maderno": "Lombardia", "Barcellona Pozzo di Gotto": "Sicilia",
-            "Pomigliano d'Arco": "Campania", "Torre Annunziata": "Campania",
-            "Albano Laziale": "Lazio", "Voghera": "Lombardia", "Jesi": "Marche",
-            "Schio": "Veneto", "Ciampino": "Lazio", "Fasano": "Puglia",
-            "Saronno": "Lombardia", "Monreale": "Sicilia", "Sciacca": "Sicilia",
-            "Marcianise": "Campania", "Cerveteri": "Lazio", "Città di Castello": "Umbria",
-            "Mira": "Veneto", "Eboli": "Campania", "Pioltello": "Lombardia",
-            "Segrate": "Lombardia", "Rende": "Calabria", "Formia": "Lazio",
-            "Maddaloni": "Campania", "Grugliasco": "Piemonte", "Bollate": "Lombardia",
-            "Cisterna di Latina": "Lazio", "Melito di Napoli": "Campania",
-            "Modugno": "Puglia", "Spoleto": "Umbria", "Caivano": "Campania",
-            "Chieri": "Piemonte", "Fermo": "Marche", "Cento": "Emilia-Romagna",
-            "Limbiate": "Lombardia", "Belluno": "Veneto", "Caltagirone": "Sicilia",
-            "Pinerolo": "Piemonte", "Brugherio": "Lombardia", "Casalecchio di Reno": "Emilia-Romagna",
-            "Mugnano di Napoli": "Campania", "Pagani": "Campania", "Cassino": "Lazio",
-            "Osimo": "Marche", "Cernusco sul Naviglio": "Lombardia", "Corsico": "Lombardia",
-            "Conegliano": "Veneto", "Augusta": "Sicilia", "Francavilla Fontana": "Puglia",
-            "Formigine": "Emilia-Romagna", "Riccione": "Emilia-Romagna", "Canicattì": "Sicilia",
-            "Angri": "Campania", "Nola": "Campania", "Licata": "Sicilia",
-            "Crema": "Lombardia", "Lanciano": "Abruzzo", "Gorizia": "Friuli-Venezia Giulia",
-            "Adrano": "Sicilia", "Castelfranco Emilia": "Emilia-Romagna",
-            "Somma Vesuviana": "Campania", "Castelfranco Veneto": "Veneto",
-            "Aosta": "Valle d'Aosta", "Nuoro": "Sardegna", "Villafranca di Verona": "Veneto",
-            "San Lazzaro di Savena": "Emilia-Romagna", "Abbiategrasso": "Lombardia",
-            "Fonte Nuova": "Lazio", "Sant'Antimo": "Campania", "Casale Monferrato": "Piemonte",
-            "Piombino": "Toscana", "San Donato Milanese": "Lombardia", "Lugo": "Emilia-Romagna",
-            "Valsamoggia": "Emilia-Romagna", "Santa Maria Capua Vetere": "Campania",
-            "Mascalucia": "Sicilia", "Venaria Reale": "Piemonte", "Termoli": "Molise",
-            "Massafra": "Puglia", "Arzano": "Campania", "Camaiore": "Toscana"
+        // Italy region map for downloads
+        const italyRegionMap = {
+            "Roma": "Lazio", "Milano": "Lombardia", "Napoli": "Campania", "Torino": "Piemonte",
+            "Palermo": "Sicilia", "Genova": "Liguria", "Bologna": "Emilia-Romagna", "Firenze": "Toscana",
+            "Bari": "Puglia", "Catania": "Sicilia", "Venezia": "Veneto", "Verona": "Veneto",
+            "Messina": "Sicilia", "Padova": "Veneto", "Trieste": "Friuli-Venezia Giulia",
+            "Taranto": "Puglia", "Brescia": "Lombardia", "Parma": "Emilia-Romagna", "Prato": "Toscana",
+            "Modena": "Emilia-Romagna", "Reggio Calabria": "Calabria", "Reggio Emilia": "Emilia-Romagna",
+            "Perugia": "Umbria", "Ravenna": "Emilia-Romagna", "Livorno": "Toscana", "Cagliari": "Sardegna",
+            "Foggia": "Puglia", "Rimini": "Emilia-Romagna", "Salerno": "Campania", "Ferrara": "Emilia-Romagna",
+            "Sassari": "Sardegna", "Latina": "Lazio", "Giugliano in Campania": "Campania", "Monza": "Lombardia",
+            "Siracusa": "Sicilia", "Pescara": "Abruzzo", "Bergamo": "Lombardia", "Forlì": "Emilia-Romagna",
+            "Trento": "Trentino-Alto Adige", "Vicenza": "Veneto", "Terni": "Umbria", "Bolzano": "Trentino-Alto Adige",
+            "Novara": "Piemonte", "Piacenza": "Emilia-Romagna", "Ancona": "Marche", "Andria": "Puglia",
+            "Arezzo": "Toscana", "Udine": "Friuli-Venezia Giulia", "Cesena": "Emilia-Romagna",
+            "Lecce": "Puglia", "Pesaro": "Marche", "Barletta": "Puglia", "Alessandria": "Piemonte",
+            "La Spezia": "Liguria", "Pisa": "Toscana", "Catanzaro": "Calabria", "Lucca": "Toscana",
+            "Brindisi": "Puglia", "Torre del Greco": "Campania", "Como": "Lombardia", "Treviso": "Veneto",
+            "Busto Arsizio": "Lombardia", "Marsala": "Sicilia", "Grosseto": "Toscana", "Sesto San Giovanni": "Lombardia",
+            "Caserta": "Campania", "Pozzuoli": "Campania", "Varese": "Lombardia", "Asti": "Piemonte",
+            "Ragusa": "Sicilia", "Cremona": "Lombardia", "Cosenza": "Calabria", "Massa": "Toscana",
+            "Trapani": "Sicilia", "Castellammare di Stabia": "Campania", "Carrara": "Toscana",
+            "Altamura": "Puglia", "Vigevano": "Lombardia", "Viterbo": "Lazio", "Matera": "Basilicata",
+            "Caltanissetta": "Sicilia", "Afragola": "Campania", "Savona": "Liguria", "Gela": "Sicilia",
+            "Imola": "Emilia-Romagna", "Benevento": "Campania", "Crotone": "Calabria", "Fano": "Marche",
+            "Portici": "Campania", "Olbia": "Sardegna", "Acireale": "Sicilia", "Molfetta": "Puglia",
+            "San Remo": "Liguria", "Potenza": "Basilicata", "Trani": "Puglia", "Civitavecchia": "Lazio",
+            "Modica": "Sicilia", "Vittoria": "Sicilia", "Faenza": "Emilia-Romagna", "Bitonto": "Puglia",
+            "Bagheria": "Sicilia", "Ercolano": "Campania", "Cerignola": "Puglia", "Manfredonia": "Puglia",
+            "San Severo": "Puglia", "Casalnuovo di Napoli": "Campania", "Viareggio": "Toscana",
+            "Carpi": "Emilia-Romagna", "Mazara del Vallo": "Sicilia", "Lamezia Terme": "Calabria",
+            "Cinisello Balsamo": "Lombardia", "Avellino": "Campania", "Aversa": "Campania", "Agrigento": "Sicilia",
+            "Quartu Sant'Elena": "Sardegna", "Legnano": "Lombardia", "Teramo": "Abruzzo", "Chieti": "Abruzzo",
+            "Pistoia": "Toscana", "Rovigo": "Veneto", "Cuneo": "Piemonte", "Rieti": "Lazio", "Vercelli": "Piemonte",
+            "L'Aquila": "Abruzzo", "Ascoli Piceno": "Marche", "Enna": "Sicilia", "Campobasso": "Molise",
+            "Belluno": "Veneto", "Sondrio": "Lombardia", "Nuoro": "Sardegna", "Oristano": "Sardegna",
+            "Frosinone": "Lazio", "Fermo": "Marche", "Isernia": "Molise", "Lodi": "Lombardia",
+            "Lecco": "Lombardia", "Mantova": "Lombardia", "Verbania": "Piemonte", "Biella": "Piemonte",
+            "Aosta": "Valle d'Aosta", "Gorizia": "Friuli-Venezia Giulia", "Pordenone": "Friuli-Venezia Giulia",
+            "Imperia": "Liguria", "Pavia": "Lombardia", "Siena": "Toscana", "Macerata": "Marche"
         };
+
+        // Download functionality
+        function downloadXLSX(data, filename) {
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Comuni');
+            ws['!cols'] = [
+                { wch: 5 },   // Rank
+                { wch: 25 },  // Comune
+                { wch: 18 },  // Regione
+                { wch: 12 },  // Popolazione
+                { wch: 12 },  // Longitudine
+                { wch: 12 }   // Latitudine
+            ];
+            XLSX.writeFile(wb, filename);
+        }
+
+        document.getElementById('downloadAll').addEventListener('click', () => {
+            const allData = italyData
+                .sort((a, b) => b.value[2] - a.value[2])
+                .map((d, i) => ({
+                    '#': i + 1,
+                    'Comune': d.name,
+                    'Regione': italyRegionMap[d.name] || 'Italia',
+                    'Popolazione': d.value[2],
+                    'Longitudine': d.value[0],
+                    'Latitudine': d.value[1]
+                }));
+            downloadXLSX(allData, 'comuni_italiani_tutti.xlsx');
+        });
+
+        document.getElementById('download128').addEventListener('click', () => {
+            const data128 = tableData.map(d => ({
+                '#': d.rank,
+                'Comune': d.name,
+                'Regione': d.regione,
+                'Popolazione': d.pop,
+                'Longitudine': d.coords[0],
+                'Latitudine': d.coords[1]
+            }));
+            downloadXLSX(data128, 'comuni_italiani_128.xlsx');
+        });
 
         // Table functionality
         const tablePanel = document.getElementById('tablePanel');
@@ -6495,43 +6625,35 @@ const comuniData =
             setTimeout(() => myChart.resize(), 350);
         });
 
-        // Show only table comuni on map
+        // Show only table comuni on map (Italy only)
         showTableOnlyBtn.addEventListener('click', () => {
             showingTableOnly = !showingTableOnly;
             showTableOnlyBtn.classList.toggle('active', showingTableOnly);
-            showTableOnlyBtn.textContent = showingTableOnly ? 'Mostra tutti' : 'Solo questi';
+            showTableOnlyBtn.textContent = showingTableOnly ? 'Mostra tutti' : 'Filtra su mappa';
 
             if (showingTableOnly) {
-                // Deactivate other filter buttons
                 filterBtns.forEach(b => b.classList.remove('active'));
-                // Show only table comuni
                 showTableComuniOnly();
             } else {
-                // Restore default filter (30K)
                 const defaultBtn = document.querySelector('.filter-btn[data-min="30000"]');
                 defaultBtn.classList.add('active');
                 updateChart(30000);
             }
         });
 
-        // Update filter buttons to reset table-only mode
         filterBtns.forEach(btn => {
-            const originalHandler = btn.onclick;
             btn.addEventListener('click', function() {
                 if (showingTableOnly) {
                     showingTableOnly = false;
                     showTableOnlyBtn.classList.remove('active');
-                    showTableOnlyBtn.textContent = 'Solo questi';
+                    showTableOnlyBtn.textContent = 'Filtra su mappa';
                 }
             });
         });
 
         function showTableComuniOnly() {
-            // Get names of comuni in the table
             const tableNames = new Set(tableData.map(d => d.name));
-
-            // Filter comuniData to only those in table
-            const filtered = comuniData
+            const filteredItaly = italyData
                 .filter(d => tableNames.has(d.name))
                 .map(d => {
                     const pop = d.value[2];
@@ -6540,26 +6662,26 @@ const comuniData =
                         name: d.name,
                         value: d.value,
                         symbolSize: style.size,
-                        itemStyle: { color: style.color }
+                        itemStyle: { color: style.color },
+                        flag: '🇮🇹'
                     };
                 });
 
-            statsDisplay.textContent = `${filtered.length} comuni (tabella)`;
+            // Only show Italy 128 comuni (hide France)
             myChart.setOption({
-                series: [{ data: filtered }]
+                series: [{ data: filteredItaly }]
             });
         }
 
         function initComuniTable() {
-            // Get comuni under 128k, sorted by population desc, take first 128
-            tableData = comuniData
+            tableData = italyData
                 .filter(d => d.value[2] < 128000)
                 .sort((a, b) => b.value[2] - a.value[2])
                 .slice(0, 128)
                 .map((d, i) => ({
                     rank: i + 1,
                     name: d.name,
-                    regione: regionMap[d.name] || 'Italia',
+                    regione: italyRegionMap[d.name] || 'Italia',
                     pop: d.value[2],
                     coords: [d.value[0], d.value[1]]
                 }));
@@ -6578,34 +6700,21 @@ const comuniData =
                 </tr>
             `).join('');
 
-            // Add click handlers
             tableBody.querySelectorAll('tr').forEach(row => {
                 row.addEventListener('click', () => {
                     const name = row.dataset.name;
                     const item = tableData[parseInt(row.dataset.idx)];
 
-                    // Highlight row
                     if (highlightedRow) highlightedRow.classList.remove('highlighted');
                     row.classList.add('highlighted');
                     highlightedRow = row;
 
-                    // Center map on comune and highlight
                     myChart.setOption({
                         geo: {
                             center: item.coords,
                             zoom: 6
                         }
                     });
-
-                    // Show tooltip
-                    const dataIndex = comuniData.findIndex(d => d.name === name);
-                    if (dataIndex >= 0) {
-                        myChart.dispatchAction({
-                            type: 'showTip',
-                            seriesIndex: 0,
-                            dataIndex: processData(30000).findIndex(d => d.name === name)
-                        });
-                    }
                 });
             });
         }
@@ -6615,7 +6724,6 @@ const comuniData =
                 th.addEventListener('click', () => {
                     const field = th.dataset.sort;
 
-                    // Toggle direction
                     if (currentSort.field === field) {
                         currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
                     } else {
@@ -6623,11 +6731,9 @@ const comuniData =
                         currentSort.dir = field === 'pop' ? 'desc' : 'asc';
                     }
 
-                    // Update headers
                     tableHeaders.forEach(h => h.classList.remove('sorted-asc', 'sorted-desc'));
                     th.classList.add(`sorted-${currentSort.dir}`);
 
-                    // Sort data
                     tableData.sort((a, b) => {
                         let aVal = a[field];
                         let bVal = b[field];
@@ -6640,56 +6746,11 @@ const comuniData =
                         }
                     });
 
-                    // Re-render
                     renderTable();
                 });
             });
         }
 
-        // Download functionality
-        function downloadXLSX(data, filename) {
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Comuni');
-
-            // Set column widths
-            ws['!cols'] = [
-                { wch: 5 },   // Rank
-                { wch: 25 },  // Comune
-                { wch: 15 },  // Regione
-                { wch: 12 },  // Popolazione
-                { wch: 12 },  // Longitudine
-                { wch: 12 }   // Latitudine
-            ];
-
-            XLSX.writeFile(wb, filename);
-        }
-
-        document.getElementById('downloadAll').addEventListener('click', () => {
-            const allData = comuniData
-                .sort((a, b) => b.value[2] - a.value[2])
-                .map((d, i) => ({
-                    '#': i + 1,
-                    'Comune': d.name,
-                    'Regione': regionMap[d.name] || 'Italia',
-                    'Popolazione': d.value[2],
-                    'Longitudine': d.value[0],
-                    'Latitudine': d.value[1]
-                }));
-            downloadXLSX(allData, 'comuni_italiani_tutti.xlsx');
-        });
-
-        document.getElementById('download128').addEventListener('click', () => {
-            const data128 = tableData.map(d => ({
-                '#': d.rank,
-                'Comune': d.name,
-                'Regione': d.regione,
-                'Popolazione': d.pop,
-                'Longitudine': d.coords[0],
-                'Latitudine': d.coords[1]
-            }));
-            downloadXLSX(data128, 'comuni_128.xlsx');
-        });
     </script>
 </body>
 </html>
