@@ -204,6 +204,25 @@
             font-size: 0.65rem;
             color: #888;
         }
+        .table-filter-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 16px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #E3F2FD;
+            color: #1565C0;
+        }
+        .table-filter-btn:hover {
+            background: #2196F3;
+            color: white;
+        }
+        .table-filter-btn.active {
+            background: #1565C0;
+            color: white;
+        }
         .legend-container {
             padding: 16px 24px;
             background: #fafafa;
@@ -262,8 +281,13 @@
             </button>
             <div class="table-panel" id="tablePanel">
                 <div class="table-header">
-                    <h3>Comuni &lt; 128K</h3>
-                    <span id="tableCount">128 comuni</span>
+                    <div>
+                        <h3>Comuni &lt; 128K</h3>
+                        <span id="tableCount">128 comuni</span>
+                    </div>
+                    <button class="table-filter-btn" id="showTableOnly" title="Mostra solo questi comuni sulla mappa">
+                        Filtra su mappa
+                    </button>
                 </div>
                 <div class="table-scroll">
                     <table class="comuni-table" id="comuniTable">
@@ -6405,10 +6429,12 @@ const comuniData =
         const tableToggle = document.getElementById('tableToggle');
         const tableBody = document.getElementById('comuniTableBody');
         const tableHeaders = document.querySelectorAll('.comuni-table th[data-sort]');
+        const showTableOnlyBtn = document.getElementById('showTableOnly');
 
         let tableData = [];
         let currentSort = { field: 'pop', dir: 'desc' };
         let highlightedRow = null;
+        let showingTableOnly = false;
 
         // Toggle panel
         tableToggle.addEventListener('click', () => {
@@ -6416,6 +6442,61 @@ const comuniData =
             tableToggle.classList.toggle('collapsed');
             setTimeout(() => myChart.resize(), 350);
         });
+
+        // Show only table comuni on map
+        showTableOnlyBtn.addEventListener('click', () => {
+            showingTableOnly = !showingTableOnly;
+            showTableOnlyBtn.classList.toggle('active', showingTableOnly);
+            showTableOnlyBtn.textContent = showingTableOnly ? 'Mostra tutti' : 'Solo questi';
+
+            if (showingTableOnly) {
+                // Deactivate other filter buttons
+                filterBtns.forEach(b => b.classList.remove('active'));
+                // Show only table comuni
+                showTableComuniOnly();
+            } else {
+                // Restore default filter (30K)
+                const defaultBtn = document.querySelector('.filter-btn[data-min="30000"]');
+                defaultBtn.classList.add('active');
+                updateChart(30000);
+            }
+        });
+
+        // Update filter buttons to reset table-only mode
+        filterBtns.forEach(btn => {
+            const originalHandler = btn.onclick;
+            btn.addEventListener('click', function() {
+                if (showingTableOnly) {
+                    showingTableOnly = false;
+                    showTableOnlyBtn.classList.remove('active');
+                    showTableOnlyBtn.textContent = 'Solo questi';
+                }
+            });
+        });
+
+        function showTableComuniOnly() {
+            // Get names of comuni in the table
+            const tableNames = new Set(tableData.map(d => d.name));
+
+            // Filter comuniData to only those in table
+            const filtered = comuniData
+                .filter(d => tableNames.has(d.name))
+                .map(d => {
+                    const pop = d.value[2];
+                    const style = getColorAndSize(pop);
+                    return {
+                        name: d.name,
+                        value: d.value,
+                        symbolSize: style.size,
+                        itemStyle: { color: style.color }
+                    };
+                });
+
+            statsDisplay.textContent = `${filtered.length} comuni (tabella)`;
+            myChart.setOption({
+                series: [{ data: filtered }]
+            });
+        }
 
         function initComuniTable() {
             // Get comuni under 128k, sorted by population desc, take first 128
