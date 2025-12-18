@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Comuni Italiani per Popolazione</title>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -223,6 +224,43 @@
             background: #1565C0;
             color: white;
         }
+        .download-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .download-btn.all {
+            background: #E3F2FD;
+            color: #1565C0;
+        }
+        .download-btn.all:hover {
+            background: #1565C0;
+            color: white;
+        }
+        .download-btn.filtered {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+        .download-btn.filtered:hover {
+            background: #4CAF50;
+            color: white;
+        }
+        .download-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+        .legend-right {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+        }
         .legend-container {
             padding: 16px 24px;
             background: #fafafa;
@@ -286,7 +324,7 @@
                         <span id="tableCount">128 comuni</span>
                     </div>
                     <button class="table-filter-btn" id="showTableOnly" title="Mostra solo questi comuni sulla mappa">
-                        Filtra su mappa
+                        Solo questi
                     </button>
                 </div>
                 <div class="table-scroll">
@@ -319,6 +357,20 @@
                     <div class="legend-circle" style="width: 28px; height: 28px; background: #E91E63;"></div>
                     <span class="legend-label">&gt; 500K</span>
                 </div>
+            </div>
+            <div class="legend-right">
+                <button class="download-btn all" id="downloadAll" title="Scarica tutti i comuni">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    Tutti i dati
+                </button>
+                <button class="download-btn filtered" id="download128" title="Scarica i 128 comuni della tabella">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    128 Comuni
+                </button>
             </div>
         </div>
     </div>
@@ -6593,6 +6645,51 @@ const comuniData =
                 });
             });
         }
+
+        // Download functionality
+        function downloadXLSX(data, filename) {
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Comuni');
+
+            // Set column widths
+            ws['!cols'] = [
+                { wch: 5 },   // Rank
+                { wch: 25 },  // Comune
+                { wch: 15 },  // Regione
+                { wch: 12 },  // Popolazione
+                { wch: 12 },  // Longitudine
+                { wch: 12 }   // Latitudine
+            ];
+
+            XLSX.writeFile(wb, filename);
+        }
+
+        document.getElementById('downloadAll').addEventListener('click', () => {
+            const allData = comuniData
+                .sort((a, b) => b.value[2] - a.value[2])
+                .map((d, i) => ({
+                    '#': i + 1,
+                    'Comune': d.name,
+                    'Regione': regionMap[d.name] || 'Italia',
+                    'Popolazione': d.value[2],
+                    'Longitudine': d.value[0],
+                    'Latitudine': d.value[1]
+                }));
+            downloadXLSX(allData, 'comuni_italiani_tutti.xlsx');
+        });
+
+        document.getElementById('download128').addEventListener('click', () => {
+            const data128 = tableData.map(d => ({
+                '#': d.rank,
+                'Comune': d.name,
+                'Regione': d.regione,
+                'Popolazione': d.pop,
+                'Longitudine': d.coords[0],
+                'Latitudine': d.coords[1]
+            }));
+            downloadXLSX(data128, 'comuni_128.xlsx');
+        });
     </script>
 </body>
 </html>
